@@ -30,8 +30,7 @@
 5. **Start the site:** `python manage.py runserver`, then open http://127.0.0.1:8000/
    - Admin panel: http://127.0.0.1:8000/admin/ (log in with the superuser you created)
    - Or press **F5** in VS Code and pick "Django: run FITNESS ZONE" to run with the debugger.
-6. **Configure email:** set `EMAIL_HOST_USER` to your Gmail address and `EMAIL_HOST_PASSWORD` to a Google App Password in your terminal environment. Use `.env.example` as a reference; Django does not load `.env` files automatically. Then register an account to receive the verification code and welcome email.
-7. **Try it:** generate a workout plan, favourite products, add to cart, check out, then see the order in the admin panel.
+6. **Try it:** register an account (the welcome email prints in the terminal), generate a workout plan, favourite products, add to cart, check out, then see the order in the admin panel.
 
 Stop the server with Ctrl+C. Next time, just activate the venv and run `python manage.py runserver`.
 
@@ -53,7 +52,7 @@ The project ships with `render.yaml`, `build.sh`, `Procfile` and a PostgreSQL se
 3. When asked, set `DJANGO_SUPERUSER_PASSWORD` (your admin password) and `DJANGO_SUPERUSER_EMAIL`.
 4. Click **Apply**. The first build takes a few minutes. Your site goes live at `https://fitforge-ai.onrender.com` (or the URL Render shows).
 5. Sign in at `/admin/` with username `admin` and the password you set. Add your real products, images and categories.
-6. **Real emails:** in the Render dashboard open the service > Environment and set `EMAIL_HOST_USER` to your Gmail address and `EMAIL_HOST_PASSWORD` to a Google App Password (not your regular Gmail password). Gmail SMTP is already configured as the default. The sender defaults to the same Gmail address.
+6. **Real welcome emails:** in the Render dashboard open the service > Environment and add `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS=1`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` (for Gmail, use an app password) and `DEFAULT_FROM_EMAIL`.
 7. **Custom domain:** Render dashboard > Settings > Custom Domains. Then add the domain to `DJANGO_ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` (with `https://`), and set `SITE_URL`.
 
 Good to know before launch:

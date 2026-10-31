@@ -20,8 +20,8 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000/ and the admin panel at http://127.0.0.1:8000/admin/.
 
-Settings come from environment variables (see `.env.example`). The app uses SQLite by default and Gmail SMTP for email.
-Set your Gmail address and Google App Password in your environment before sending emails.
+Settings come from environment variables (see `.env.example`). Defaults work out of the box:
+SQLite database and a console email backend, so the **welcome email prints in your terminal**.
 
 ## What is included
 
@@ -56,12 +56,10 @@ The engine is rule-based today: it reads goal, experience, equipment and days pe
 It also suggests shop products for the goal. `generate_plan()` is the single entry point, so an LLM-backed
 generator can replace or refine it later without changing views or templates. Plans are general guidance, not medical advice.
 
-## Email (Gmail SMTP)
+## Real email (Gmail example)
 
-Gmail SMTP is the default backend. Set `EMAIL_HOST_USER` to the Gmail address and `EMAIL_HOST_PASSWORD` to a
-Google App Password (not your regular Gmail password). App Passwords require 2-Step Verification. By default,
-the sender address is the same Gmail account; override it with `DEFAULT_FROM_EMAIL` only if Gmail permits it.
-Keep the app password in your local environment or hosting secrets, never in source control.
+Set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`,
+`EMAIL_USE_TLS=1`, `EMAIL_HOST_USER`, and an app password in `EMAIL_HOST_PASSWORD`.
 
 ## PostgreSQL
 
