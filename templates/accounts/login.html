@@ -18,6 +18,7 @@
         <button type="submit" class="btn btn-block btn-large">Login</button>
       </form>
       <p style="margin-top:1.2rem"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a></p>
+      <p class="muted">Did not verify your email? <a href="{% url 'accounts:resend_verification' %}">Resend verification code</a></p>
       <p class="muted">New here? <a href="{% url 'accounts:register' %}">Create a free account</a></p>
     </div>
   </div>

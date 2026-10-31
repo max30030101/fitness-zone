@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Email verified{% endblock %}
+{% block content %}
+<section class="auth"><div class="auth-art" aria-hidden="true">{% include "partials/_athlete.html" with cls="" %}<h2>You're in. <em>Let's get stronger.</em></h2></div>
+<div class="auth-form"><div class="form"><span class="eyebrow">Verified</span><h1>Email verified!</h1><p class="muted">Your FitnessZone account is active. Your fitness journey starts now.</p>
+{% if welcome_email_sent %}<p class="muted">Your welcome email has been sent. Check your inbox and spam folder.</p>{% else %}<p class="muted">The account is verified, but the welcome email has not been confirmed as sent. You can safely retry it.</p><form method="post" action="{% url 'accounts:retry_welcome_email' %}">{% csrf_token %}<button class="btn btn-block" type="submit">Retry welcome email</button></form>{% endif %}
+<a class="btn btn-block btn-large" href="{% url 'workouts:recommend' %}" style="margin-top:1rem">Build my workout plan</a></div></div></section>
+{% endblock %}

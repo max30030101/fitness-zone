@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Resend verification code{% endblock %}
+{% block content %}
+<section class="auth"><div class="auth-art" aria-hidden="true">{% include "partials/_athlete.html" with cls="" %}<h2>Almost there. <em>Verify your account.</em></h2></div>
+<div class="auth-form"><div class="form"><span class="eyebrow">Email verification</span><h1>Resend your code</h1><p class="muted">Enter the email address you used during registration. If the account needs verification, we'll send a new code.</p>
+<form method="post" data-loading="Sending code…">{% csrf_token %}<label for="id_email">Email address</label><input id="id_email" type="email" name="email" autocomplete="email" required placeholder="you@example.com"><button class="btn btn-block btn-large" type="submit">Send verification code</button></form>
+<p class="muted" style="margin-top:1.2rem"><a href="{% url 'accounts:login' %}">Back to login</a></p></div></div></section>
+{% endblock %}

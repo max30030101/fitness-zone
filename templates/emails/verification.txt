@@ -1,0 +1,9 @@
+Hi {{ name }},
+
+Your {{ site_name }} verification code is: {{ code }}
+
+This code expires in {{ expiry_minutes }} minutes. Do not share it with anyone.
+If you did not create this account, you can ignore this email.
+
+The {{ site_name }} team
+{{ site_url }}

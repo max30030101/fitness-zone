@@ -28,3 +28,18 @@ class Profile(models.Model):
             m = self.height_cm / 100
             return round(float(self.weight_kg) / (m * m), 1)
         return None
+
+
+class EmailVerification(models.Model):
+    """One verification record per user; OTPs are stored as hashes, never plaintext."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="email_verification")
+    code_hash = models.CharField(max_length=64, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    welcome_email_sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Email verification for {self.user.email}"
