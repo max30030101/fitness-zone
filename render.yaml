@@ -1,4 +1,4 @@
-# One-click blueprint for Render.com: web service + PostgreSQL database.
+# Render web service. Set the MYSQL_* variables to connect to Aiven MySQL.
 databases:
   - name: fitnesszone-db
     databaseName: fitforge
@@ -24,6 +24,18 @@ services:
         fromDatabase:
           name: fitnesszone-db
           property: connectionString
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_PORT
+        sync: false
+      - key: MYSQL_DATABASE
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_SSL_CA
+        sync: false
       - key: SEED_DEMO
         value: "1"
       - key: DJANGO_SUPERUSER_USERNAME

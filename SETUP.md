@@ -63,13 +63,14 @@ The project ships with `render.yaml`, `build.sh`, `Procfile` and a PostgreSQL se
 
 ### Connect Aiven MySQL
 
-Create a MySQL service in Aiven and download its CA certificate. In the Render web service's **Environment** settings,
-set `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_SSL_CA`. Upload the CA
-certificate to Render under **Secret Files** and set `MYSQL_SSL_CA` to its mounted path, for example
-`/etc/secrets/ca.pem`. The app uses MySQL whenever `MYSQL_HOST` is set, even if a PostgreSQL `DATABASE_URL` remains.
-After deploying, check the build logs for successful migrations and confirm the site/admin works. Back up existing
-PostgreSQL data before switching; it is not automatically transferred. Keep product-image storage configured
-separately because database migration does not copy uploaded files.
+Create a MySQL service in Aiven and download its CA certificate. The Render Blueprint declares
+`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_SSL_CA` as environment
+variables. Enter the matching values in the Render web service's **Environment** settings. Upload the CA certificate
+to Render under **Secret Files** and set `MYSQL_SSL_CA` to its mounted path, for example `/etc/secrets/ca.pem`.
+The app uses MySQL whenever `MYSQL_HOST` is set, even if a PostgreSQL `DATABASE_URL` remains. After deploying,
+check the build logs for successful migrations and confirm the site/admin works. Back up existing PostgreSQL data
+before switching; it is not automatically transferred. Keep product-image storage configured separately because
+database migration does not copy uploaded files.
 
 Good to know before launch:
 - **Uploaded product images** are stored on the server's disk, which free hosting wipes on redeploy. For a real store, attach a persistent disk (set `MEDIA_ROOT` to its path and `SERVE_MEDIA=1`) or move to cloud storage such as S3. Check Render's current free-tier limits (sleeping services, database retention) before relying on it for customers.
