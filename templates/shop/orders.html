@@ -4,7 +4,10 @@
 <section class="section"><div class="wrap narrow">
   <div class="section-head">
     <h1>Your orders</h1>
-    <button class="btn btn-ghost" type="button" data-open-dialog="contact-help">Help</button>
+    <div>
+      <a class="btn btn-ghost" href="{% url 'shop:addresses' %}">Saved addresses</a>
+      <button class="btn btn-ghost" type="button" data-open-dialog="contact-help">Help</button>
+    </div>
   </div>
   {% if order_notifications %}
     <section class="order-updates" aria-labelledby="order-updates-title">

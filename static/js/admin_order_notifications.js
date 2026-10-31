@@ -11,8 +11,10 @@
   var since = script.dataset.since;
   var lastCheckedAt = null;
   var polling = false;
-  region.className = "messagelist";
-  region.setAttribute("aria-live", "polite");
+  region.className = "admin-order-alerts";
+  region.setAttribute("role", "region");
+  region.setAttribute("aria-label", "New shop alerts");
+  region.setAttribute("aria-live", "assertive");
   region.setAttribute("aria-relevant", "additions");
   region.hidden = true;
   region.appendChild(list);
@@ -40,10 +42,20 @@
 
           var item = document.createElement("li");
           var link = document.createElement("a");
-          item.className = "success";
+          var close = document.createElement("button");
+          item.className = "admin-order-alert admin-order-alert--" + notification.event_type;
           link.href = notification.url;
           link.textContent = notification.message;
+          close.type = "button";
+          close.className = "admin-order-alert__close";
+          close.setAttribute("aria-label", "Dismiss notification");
+          close.textContent = "\u00d7";
+          close.addEventListener("click", function () {
+            item.remove();
+            if (!list.children.length) region.hidden = true;
+          });
           item.appendChild(link);
+          item.appendChild(close);
           list.appendChild(item);
           region.hidden = false;
         });

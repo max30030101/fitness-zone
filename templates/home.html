@@ -3,6 +3,23 @@
 {% block intro %}{% include "partials/_intro.html" %}{% endblock %}
 {% block content %}
 
+{% if home_order_notification %}
+<dialog id="home-order-notification" class="order-confirmation" aria-labelledby="home-order-notification-title">
+  <div class="order-confirmation-card">
+    <form method="post" action="{% url 'shop:order_notification_read' home_order_notification.id %}" data-dismiss-notification>
+      {% csrf_token %}
+      <button class="dialog-close" type="submit" aria-label="Close order status notification">&times;</button>
+    </form>
+    <span class="eyebrow">Order update</span>
+    <h2 id="home-order-notification-title">Order #{{ home_order_notification.order_id }} status changed</h2>
+    <p>Your order changed from {{ home_order_notification.get_old_status_display }} to <strong>{{ home_order_notification.get_new_status_display }}</strong>.</p>
+    <div class="order-confirmation-actions">
+      <a class="btn" href="{% url 'shop:orders' %}">View your orders</a>
+    </div>
+  </div>
+</dialog>
+{% endif %}
+
 <section class="hero">
   <div class="wrap hero-grid">
     <div>

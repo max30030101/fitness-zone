@@ -16,6 +16,7 @@ from .models import (
     OrderItem,
     OrderStatusNotification,
     Product,
+    SavedAddress,
 )
 
 
@@ -85,6 +86,60 @@ class ShopNotificationTests(TestCase):
         self.assertContains(response, "Confirmed")
         notification.refresh_from_db()
         self.assertIsNotNone(notification.read_at)
+
+    def test_home_page_shows_latest_unread_order_status_popup(self):
+        order = self.make_order()
+        with self.captureOnCommitCallbacks(execute=True):
+            order.status = "shipped"
+            order.save(update_fields=["status"])
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("home"))
+
+        self.assertContains(response, 'id="home-order-notification"')
+        self.assertContains(response, "Order update")
+        self.assertContains(response, "changed from Pending to")
+        self.assertContains(response, "Shipped")
+        self.assertContains(response, reverse("shop:order_notification_read", args=[
+            OrderStatusNotification.objects.get(order=order).pk,
+        ]))
+
+    def test_closing_home_popup_marks_only_owned_notification_read(self):
+        order = self.make_order()
+        with self.captureOnCommitCallbacks(execute=True):
+            order.status = "cancelled"
+            order.save(update_fields=["status"])
+        notification = OrderStatusNotification.objects.get(order=order)
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("shop:order_notification_read", args=[notification.pk]),
+        )
+
+        self.assertRedirects(response, reverse("home"))
+        notification.refresh_from_db()
+        self.assertIsNotNone(notification.read_at)
+
+    def test_user_cannot_dismiss_another_users_order_notification(self):
+        order = self.make_order()
+        with self.captureOnCommitCallbacks(execute=True):
+            order.status = "shipped"
+            order.save(update_fields=["status"])
+        notification = OrderStatusNotification.objects.get(order=order)
+        other_user = User.objects.create_user(
+            username="notification-owner-check",
+            email="notification-owner-check@example.test",
+            password="test-password",
+        )
+        self.client.force_login(other_user)
+
+        response = self.client.post(
+            reverse("shop:order_notification_read", args=[notification.pk]),
+        )
+
+        self.assertEqual(response.status_code, 404)
+        notification.refresh_from_db()
+        self.assertIsNone(notification.read_at)
 
     def test_order_updates_badge_counts_only_current_users_unread_notifications(self):
         order = self.make_order()
@@ -248,9 +303,11 @@ class OrderInvoiceTests(TestCase):
         response = self.client.get(reverse("shop:order_success", args=[self.order.pk]))
         self.assertContains(response, reverse("shop:order_invoice", args=[self.order.pk]))
         self.assertContains(response, 'id="order-confirmation"')
+        self.assertContains(response, 'aria-label="Close order confirmation"')
         self.assertContains(response, "Thanks for your order!")
         dialog = response.content.decode().split('<dialog id="order-confirmation"', 1)[1].split("</dialog>", 1)[0]
         self.assertIn(">View order</a>", dialog)
+        self.assertIn('method="dialog"', dialog)
         self.assertNotIn("Download invoice (PDF)", dialog)
         self.assertNotIn("Continue shopping", dialog)
 
@@ -339,6 +396,170 @@ class OrderInvoiceTests(TestCase):
         self.assertNotContains(response, reverse("shop:order_cancel", args=[self.order.pk]))
 
 
+class CheckoutAddressTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="address-customer",
+            email="address-customer@example.test",
+            password="test-password",
+            first_name="Checkout Customer",
+        )
+        self.category = Category.objects.create(name="Address checkout")
+        self.product = Product.objects.create(
+            category=self.category,
+            name="Address test item",
+            price="20.00",
+            stock=10,
+        )
+        self.cart = Cart.objects.create(user=self.user)
+        CartItem.objects.create(cart=self.cart, product=self.product, quantity=1)
+
+    def make_address(self, user=None, **overrides):
+        values = {
+            "user": user or self.user,
+            "label": "Home",
+            "full_name": "Checkout Customer",
+            "phone": "9876543210",
+            "address_line": "12 Green Road",
+            "city": "Pune",
+            "state": "Maharashtra",
+            "pincode": "411001",
+        }
+        values.update(overrides)
+        return SavedAddress.objects.create(**values)
+
+    def test_checkout_lists_saved_addresses_and_prefills_selected_address(self):
+        address = self.make_address()
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("shop:checkout"))
+
+        self.assertContains(response, f'value="{address.pk}"')
+        self.assertContains(response, "Home — 12 Green Road, Pune")
+        self.assertContains(response, 'data-address-line="12 Green Road"')
+        self.assertContains(response, 'name="saved_address"')
+
+    def test_checkout_saves_new_address_by_default(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("shop:checkout"))
+
+        self.assertRegex(response.content.decode(), r'name="save_address"[^>]*checked')
+
+    def test_checkout_uses_saved_address_and_can_update_it(self):
+        address = self.make_address()
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("shop:checkout"), {
+            "saved_address": str(address.pk),
+            "full_name": "",
+            "phone": "",
+            "address_line": "",
+            "city": "",
+            "state": "",
+            "pincode": "",
+            "save_address": "on",
+            "address_label": "Office",
+        })
+
+        order = Order.objects.get(user=self.user)
+        self.assertRedirects(response, reverse("shop:order_success", args=[order.pk]))
+        self.assertEqual(order.full_name, address.full_name)
+        self.assertEqual(order.phone, address.phone)
+        self.assertEqual(order.address_line, address.address_line)
+        self.assertEqual(order.city, address.city)
+        self.assertEqual(order.state, address.state)
+        self.assertEqual(order.pincode, address.pincode)
+        address.refresh_from_db()
+        self.assertEqual(address.label, "Office")
+
+    def test_checkout_can_save_a_new_address_for_later(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("shop:checkout"), {
+            "saved_address": "",
+            "full_name": "New Recipient",
+            "phone": "9876543210",
+            "address_line": "50 River Street",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "pincode": "400001",
+            "save_address": "on",
+            "address_label": "Work",
+        })
+
+        order = Order.objects.get(user=self.user)
+        self.assertRedirects(response, reverse("shop:order_success", args=[order.pk]))
+        saved = SavedAddress.objects.get(user=self.user, label="Work")
+        self.assertEqual(saved.address_line, "50 River Street")
+        self.assertEqual(saved.city, "Mumbai")
+
+    def test_user_can_add_and_edit_saved_addresses(self):
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("shop:addresses"), {
+            "label": "Apartment",
+            "full_name": "Checkout Customer",
+            "phone": "9876543210",
+            "address_line": "8 Hill Road",
+            "city": "Nashik",
+            "state": "Maharashtra",
+            "pincode": "422001",
+        })
+        self.assertRedirects(response, reverse("shop:addresses"))
+        address = SavedAddress.objects.get(user=self.user, label="Apartment")
+
+        response = self.client.post(reverse("shop:address_edit", args=[address.pk]), {
+            "label": "New home",
+            "full_name": "Checkout Customer",
+            "phone": "9876543210",
+            "address_line": "9 Hill Road",
+            "city": "Nashik",
+            "state": "Maharashtra",
+            "pincode": "422001",
+        })
+        self.assertRedirects(response, reverse("shop:addresses"))
+        address.refresh_from_db()
+        self.assertEqual(address.label, "New home")
+        self.assertEqual(address.address_line, "9 Hill Road")
+
+    def test_user_cannot_edit_another_users_saved_address(self):
+        other_user = User.objects.create_user(
+            username="address-owner",
+            email="address-owner@example.test",
+            password="test-password",
+        )
+        address = self.make_address(user=other_user)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("shop:address_edit", args=[address.pk]))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_checkout_rejects_another_users_saved_address(self):
+        other_user = User.objects.create_user(
+            username="foreign-address-owner",
+            email="foreign-address-owner@example.test",
+            password="test-password",
+        )
+        address = self.make_address(user=other_user)
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("shop:checkout"), {
+            "saved_address": str(address.pk),
+            "full_name": address.full_name,
+            "phone": address.phone,
+            "address_line": address.address_line,
+            "city": address.city,
+            "state": address.state,
+            "pincode": address.pincode,
+            "address_label": "Home",
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.filter(user=self.user).exists())
+        self.assertContains(response, "Select a valid choice")
+
+
 class AdminOrderNotificationTests(TestCase):
     def setUp(self):
         self.admin_user = User.objects.create_superuser(
@@ -367,6 +588,7 @@ class AdminOrderNotificationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["notifications"], [{
             "id": event.pk,
+            "event_type": "new_order",
             "message": f"New order #{order.pk} placed by New Customer",
             "url": reverse("admin:shop_order_change", args=[order.pk]),
         }])
@@ -397,6 +619,10 @@ class AdminOrderNotificationTests(TestCase):
                 f"Order #{order.pk} was cancelled",
             ],
         )
+        self.assertEqual(
+            [notification["event_type"] for notification in response.json()["notifications"]],
+            ["new_order", "order_cancelled"],
+        )
 
     def test_staff_receives_product_out_of_stock_notification(self):
         category = Category.objects.create(name="Admin notifications")
@@ -419,6 +645,7 @@ class AdminOrderNotificationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["notifications"], [{
             "id": event.pk,
+            "event_type": "product_out_of_stock",
             "message": "Last item is out of stock",
             "url": reverse("admin:shop_product_change", args=[product.pk]),
         }])
@@ -489,6 +716,7 @@ class AdminOrderNotificationTests(TestCase):
         response = self.client.get(reverse("admin:index"))
 
         self.assertContains(response, "js/admin_order_notifications.js")
+        self.assertContains(response, "css/admin_order_notifications.css")
         self.assertContains(response, self.endpoint)
 
 

@@ -163,6 +163,30 @@ def shipping_for(subtotal):
     return Decimal(settings.SHIPPING_FEE)
 
 
+class SavedAddress(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_addresses",
+    )
+    label = models.CharField(max_length=40, default="Home")
+    full_name = models.CharField(max_length=120)
+    phone = models.CharField(max_length=15, validators=[RegexValidator(r"^[0-9+\- ]{10,15}$", "Enter a valid phone number.")])
+    address_line = models.CharField("Address", max_length=255)
+    city = models.CharField(max_length=80)
+    state = models.CharField(max_length=80)
+    pincode = models.CharField(max_length=6, validators=[RegexValidator(r"^[1-9][0-9]{5}$", "Enter a valid 6-digit PIN code.")])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["label", "id"]
+        verbose_name_plural = "saved addresses"
+
+    def __str__(self):
+        return f"{self.label} — {self.address_line}, {self.city}"
+
+
 class Order(models.Model):
     STATUS = [
         ("pending", "Pending"),

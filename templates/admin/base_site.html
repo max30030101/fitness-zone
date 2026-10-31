@@ -3,6 +3,7 @@
 
 {% block extrahead %}
   {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/admin_order_notifications.css' %}">
   <script
     src="{% static 'js/admin_order_notifications.js' %}"
     data-endpoint="{% url 'admin_order_notifications' %}"

@@ -53,7 +53,12 @@ def order_notifications(request):
                 if event.product_id
                 else reverse("admin:index")
             )
-        notifications.append({"id": event.pk, "message": message, "url": url})
+        notifications.append({
+            "id": event.pk,
+            "event_type": event.event_type,
+            "message": message,
+            "url": url,
+        })
     return JsonResponse({"notifications": notifications, "checked_at": timezone.now().isoformat()})
 
 

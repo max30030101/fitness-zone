@@ -106,6 +106,17 @@ class ProfilePhotoTests(TestCase):
 
         response = self.client.get(reverse("accounts:profile"))
         self.assertContains(response, self.user.profile.photo.url)
+        self.assertContains(response, 'class="profile-photo"')
+        self.assertEqual(response.content.count(b'class="profile-photo"'), 1)
+        self.assertContains(response, 'data-profile-photo-preview')
+        self.assertContains(response, 'id="profile-photo-dialog"')
+        self.assertContains(response, 'data-profile-photo-enlarged')
+        self.assertContains(response, '<p class="profile-name">Photo</p>', html=True)
+        self.assertContains(response, 'aria-label="Edit profile photo"')
+        self.assertNotContains(response, "Maximum file size")
+        self.assertNotContains(response, "JPG, PNG, or WebP")
+        self.assertNotContains(response, "Currently:")
+        self.assertNotContains(response, "Clear")
 
     def test_profile_photo_rejects_non_image_upload(self):
         response = self.client.post(reverse("accounts:profile"), {

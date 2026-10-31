@@ -8,6 +8,9 @@
   <p><a class="btn" href="{% url 'shop:order_invoice' order.id %}">Download invoice (PDF)</a> <a class="btn btn-ghost" href="{% url 'shop:orders' %}">View my orders</a> <a class="btn btn-ghost" href="{% url 'shop:list' %}">Keep shopping</a></p>
 </div></section>
 <dialog id="order-confirmation" class="order-confirmation" aria-labelledby="order-confirmation-title">
+  <form method="dialog" class="dialog-close-form">
+    <button class="dialog-close" type="submit" aria-label="Close order confirmation">&times;</button>
+  </form>
   <div class="order-confirmation-card">
     <svg class="order-confirmation-icon" viewBox="0 0 48 48" aria-hidden="true">
       <circle cx="24" cy="24" r="21"/>

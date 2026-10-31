@@ -51,11 +51,8 @@ class ProfileForm(forms.ModelForm):
             "experience": "Experience level",
             "days_per_week": "Workout days per week",
         }
-        help_texts = {
-            "photo": "JPG, PNG, or WebP. Maximum file size: 5 MB.",
-        }
         widgets = {
-            "photo": forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+            "photo": forms.FileInput(attrs={"accept": "image/jpeg,image/png,image/webp", "hidden": True}),
         }
 
     def clean_photo(self):

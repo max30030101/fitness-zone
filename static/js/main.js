@@ -42,6 +42,36 @@
     orderConfirmation.showModal();
   }
 
+  /* ---------- home page order update popup ---------- */
+  var homeOrderNotification = $("#home-order-notification");
+  if (homeOrderNotification && typeof homeOrderNotification.showModal === "function") {
+    var dismissalForm = $("[data-dismiss-notification]", homeOrderNotification);
+    var dismissalStarted = false;
+    if (dismissalForm) {
+      var markNotificationRead = function () {
+        if (dismissalStarted) return;
+        dismissalStarted = true;
+        fetch(dismissalForm.action, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "X-CSRFToken": $("[name=csrfmiddlewaretoken]", dismissalForm).value },
+          body: new FormData(dismissalForm)
+        }).then(function (response) {
+          if (!response.ok) throw new Error("Could not dismiss order notification.");
+        }).catch(function (error) {
+          console.error(error);
+          dismissalForm.submit();
+        });
+      };
+      dismissalForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        homeOrderNotification.close();
+      });
+      homeOrderNotification.addEventListener("close", markNotificationRead);
+    }
+    homeOrderNotification.showModal();
+  }
+
   /* ---------- contact dialog ---------- */
   $$("[data-open-dialog]").forEach(function (button) {
     button.addEventListener("click", function () {
@@ -49,6 +79,68 @@
       if (dialog && typeof dialog.showModal === "function") dialog.showModal();
     });
   });
+
+  /* ---------- saved checkout addresses ---------- */
+  var addressForm = $("[data-checkout-address-form]");
+  if (addressForm) {
+    var addressSelect = $("[data-saved-address-select]", addressForm);
+    var saveAddress = $("[name=save_address]", addressForm);
+    var addressLabelField = $("[data-address-label-field]", addressForm);
+    var copyAddress = function (option) {
+      ["fullName", "phone", "addressLine", "city", "state", "pincode"].forEach(function (key) {
+        var fieldName = key.replace(/[A-Z]/g, function (letter) { return "_" + letter.toLowerCase(); });
+        var field = $("[name=" + fieldName + "]", addressForm);
+        if (field) field.value = option ? option.dataset[key] || "" : "";
+      });
+    };
+    var updateLabelVisibility = function () {
+      if (addressLabelField) addressLabelField.hidden = !saveAddress || !saveAddress.checked;
+    };
+    if (addressSelect) {
+      addressSelect.addEventListener("change", function () {
+        var option = addressSelect.options[addressSelect.selectedIndex];
+        copyAddress(option && option.value ? option : null);
+      });
+    }
+    if (saveAddress) saveAddress.addEventListener("change", updateLabelVisibility);
+    updateLabelVisibility();
+  }
+
+  /* ---------- profile photo picker ---------- */
+  var profilePhotoForm = $("#id_photo");
+  var profilePhotoButton = $("[data-profile-photo-preview]");
+  var profilePhotoImage = $("[data-profile-photo-image]");
+  var profilePhotoPlaceholder = $("[data-profile-photo-placeholder]");
+  var profilePhotoDialog = $("#profile-photo-dialog");
+  var enlargedProfilePhoto = $("[data-profile-photo-enlarged]");
+  var temporaryProfilePhotoUrl = null;
+  $$("[data-select-profile-photo]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (profilePhotoForm) profilePhotoForm.click();
+    });
+  });
+  if (profilePhotoForm && profilePhotoImage && profilePhotoButton) {
+    profilePhotoForm.addEventListener("change", function () {
+      var file = profilePhotoForm.files && profilePhotoForm.files[0];
+      if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) return;
+      if (temporaryProfilePhotoUrl) URL.revokeObjectURL(temporaryProfilePhotoUrl);
+      temporaryProfilePhotoUrl = URL.createObjectURL(file);
+      profilePhotoImage.src = temporaryProfilePhotoUrl;
+      profilePhotoImage.hidden = false;
+      if (profilePhotoPlaceholder) profilePhotoPlaceholder.hidden = true;
+      profilePhotoButton.disabled = false;
+    });
+  }
+  if (profilePhotoButton && profilePhotoDialog && enlargedProfilePhoto && typeof profilePhotoDialog.showModal === "function") {
+    profilePhotoButton.addEventListener("click", function () {
+      if (profilePhotoImage && !profilePhotoImage.hidden && profilePhotoImage.src) {
+        enlargedProfilePhoto.src = profilePhotoImage.src;
+        profilePhotoDialog.showModal();
+      }
+    });
+    var closeProfilePhotoDialog = $("[data-close-profile-photo]", profilePhotoDialog);
+    if (closeProfilePhotoDialog) closeProfilePhotoDialog.addEventListener("click", function () { profilePhotoDialog.close(); });
+  }
 
   /* ---------- scroll reveal ---------- */
   var reveals = $$(".reveal");

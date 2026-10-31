@@ -16,9 +16,9 @@ from django.views.decorators.http import require_POST
 
 from workouts.library import featured_workouts
 
-from .forms import CheckoutForm
+from .forms import CheckoutForm, SavedAddressForm
 from .invoices import build_invoice_pdf
-from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Product, shipping_for
+from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Product, SavedAddress, shipping_for
 
 PER_PAGE = 12
 SORTS = [
@@ -50,12 +50,19 @@ def _active_categories():
 # ---------------------------------------------------------------- browsing
 def home(request):
     products = Product.objects.filter(is_active=True).select_related("category")
-    return render(request, "home.html", {
+    context = {
         "featured": products.filter(is_featured=True)[:8],
         "new_arrivals": products.order_by("-created_at")[:4],
         "categories": _active_categories(),
         "workouts": featured_workouts(),
-    })
+    }
+    if request.user.is_authenticated:
+        context["home_order_notification"] = (
+            OrderStatusNotification.objects.filter(user=request.user, read_at__isnull=True)
+            .select_related("order")
+            .first()
+        )
+    return render(request, "home.html", context)
 
 
 def shop(request, slug=None):
@@ -225,7 +232,7 @@ def checkout(request):
     shipping = shipping_for(subtotal)
 
     if request.method == "POST":
-        form = CheckoutForm(request.POST)
+        form = CheckoutForm(request.POST, user=request.user)
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -238,6 +245,18 @@ def checkout(request):
                     order.user = request.user
                     order.subtotal, order.shipping, order.total = subtotal, shipping, subtotal + shipping
                     order.save()
+                    if form.cleaned_data["save_address"]:
+                        saved_address = form.cleaned_data["saved_address"]
+                        if saved_address is None:
+                            saved_address = SavedAddress(user=request.user)
+                        saved_address.label = form.cleaned_data["address_label"] or "Home"
+                        saved_address.full_name = order.full_name
+                        saved_address.phone = order.phone
+                        saved_address.address_line = order.address_line
+                        saved_address.city = order.city
+                        saved_address.state = order.state
+                        saved_address.pincode = order.pincode
+                        saved_address.save()
                     for i in items:
                         p = locked[i.product_id]
                         OrderItem.objects.create(order=order, product=p, product_name=p.name,
@@ -251,9 +270,35 @@ def checkout(request):
             return redirect("shop:order_success", order_id=order.pk)
     else:
         u = request.user
-        form = CheckoutForm(initial={"full_name": u.get_full_name(), "phone": u.profile.phone, "city": u.profile.city})
+        form = CheckoutForm(
+            user=u,
+            initial={"full_name": u.get_full_name(), "phone": u.profile.phone, "city": u.profile.city},
+        )
     return render(request, "shop/checkout.html", {
-        "form": form, "items": items, "subtotal": subtotal, "shipping": shipping, "total": subtotal + shipping,
+        "form": form,
+        "items": items,
+        "subtotal": subtotal,
+        "shipping": shipping,
+        "total": subtotal + shipping,
+        "saved_addresses": request.user.saved_addresses.all(),
+        "selected_address_id": form["saved_address"].value() or "",
+    })
+
+
+@login_required
+def address_book(request, address_id=None):
+    address = get_object_or_404(request.user.saved_addresses, pk=address_id) if address_id else None
+    form = SavedAddressForm(request.POST or None, instance=address)
+    if request.method == "POST" and form.is_valid():
+        saved_address = form.save(commit=False)
+        saved_address.user = request.user
+        saved_address.save()
+        messages.success(request, "Saved address updated." if address else "Address added.")
+        return redirect("shop:addresses")
+    return render(request, "shop/addresses.html", {
+        "form": form,
+        "addresses": request.user.saved_addresses.all(),
+        "editing_address": address,
     })
 
 
@@ -297,6 +342,20 @@ def order_cancel(request, order_id):
 
     messages.success(request, f"Order #{order.pk} has been cancelled.")
     return redirect("shop:orders")
+
+
+@login_required
+@require_POST
+def order_notification_read(request, notification_id):
+    notification = get_object_or_404(
+        OrderStatusNotification,
+        pk=notification_id,
+        user=request.user,
+    )
+    if notification.read_at is None:
+        notification.read_at = timezone.now()
+        notification.save(update_fields=["read_at"])
+    return redirect("home")
 
 
 @login_required

@@ -4,10 +4,39 @@
 <section class="section"><div class="wrap">
   <h1>Checkout</h1>
   <div class="cart-layout">
-    <form method="post" class="form" data-loading="Placing order…">
+    <form method="post" class="form" data-loading="Placing order…" data-checkout-address-form>
       {% csrf_token %}
       <h2>Delivery address</h2>
-      {% include "partials/_form_fields.html" %}
+      <div class="field{% if form.saved_address.errors %} has-error{% endif %}">
+        <label for="{{ form.saved_address.id_for_label }}">{{ form.saved_address.label }}</label>
+        <select id="{{ form.saved_address.id_for_label }}" name="{{ form.saved_address.html_name }}" data-saved-address-select>
+          <option value="">Enter a new address</option>
+          {% for address in saved_addresses %}
+            <option value="{{ address.pk }}"
+              data-full-name="{{ address.full_name }}"
+              data-phone="{{ address.phone }}"
+              data-address-line="{{ address.address_line }}"
+              data-city="{{ address.city }}"
+              data-state="{{ address.state }}"
+              data-pincode="{{ address.pincode }}"
+              {% if selected_address_id|stringformat:"s" == address.pk|stringformat:"s" %}selected{% endif %}>
+              {{ address.label }} — {{ address.address_line }}, {{ address.city }}
+            </option>
+          {% endfor %}
+        </select>
+        {% for error in form.saved_address.errors %}<p class="error">{{ error }}</p>{% endfor %}
+        <p class="help"><a href="{% url 'shop:addresses' %}">Manage saved addresses</a></p>
+      </div>
+      {% for field in form %}
+        {% if field.name != "saved_address" %}
+          <div class="field{% if field.errors %} has-error{% endif %}"{% if field.name == "address_label" %} data-address-label-field{% endif %}>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+            {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
       <h2>Payment</h2>
       <p>Cash on delivery. Pay when your order arrives. Online payments are coming soon.</p>
       <button type="submit" class="btn btn-large">Place order, ₹{{ total|floatformat:"-2g" }}</button>

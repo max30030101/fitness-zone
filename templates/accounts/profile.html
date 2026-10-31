@@ -4,14 +4,42 @@
 <section class="section"><div class="wrap narrow">
   <span class="eyebrow">Profile settings</span>
   <h1>Your profile</h1>
-  {% if user.profile.photo %}
-    <img class="profile-photo" src="{{ user.profile.photo.url }}" alt="Profile photo for {{ user.get_full_name|default:user.username }}">
-  {% endif %}
-  <p class="muted">{{ user.get_full_name|default:user.username }} ({{ user.email }}){% if user.profile.bmi %}. Current BMI: {{ user.profile.bmi }}{% endif %}</p>
   <form method="post" class="form" enctype="multipart/form-data">
     {% csrf_token %}
-    {% include "partials/_form_fields.html" %}
+    <div class="profile-identity">
+      <div class="profile-photo-wrap">
+        <button class="profile-photo-preview" type="button" data-profile-photo-preview aria-label="Enlarge profile photo"{% if not user.profile.photo %} disabled{% endif %}>
+          <img class="profile-photo" data-profile-photo-image alt="Profile photo for {{ user.get_full_name|default:user.username }}"{% if user.profile.photo %} src="{{ user.profile.photo.url }}"{% else %} hidden{% endif %}>
+          <span class="profile-photo profile-photo-placeholder" data-profile-photo-placeholder aria-hidden="true"{% if user.profile.photo %} hidden{% endif %}>{{ user.first_name|default:user.username|first|upper }}</span>
+        </button>
+        <button class="profile-photo-edit" type="button" data-select-profile-photo aria-label="Edit profile photo" title="Edit profile photo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+        </button>
+      </div>
+      <p class="profile-name">{{ user.get_full_name|default:user.username }}</p>
+    </div>
+    <p class="muted">{{ user.email }}{% if user.profile.bmi %}. Current BMI: {{ user.profile.bmi }}{% endif %}</p>
+    {% with field=form.photo %}
+      <div class="field{% if field.errors %} has-error{% endif %}">
+        {{ field }}
+        {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endwith %}
+    {% for field in form %}
+      {% if field.name != "photo" %}
+        <div class="field{% if field.errors %} has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+          {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
     <button type="submit" class="btn">Save profile</button>
   </form>
 </div></section>
+<dialog class="profile-photo-dialog" id="profile-photo-dialog" aria-label="Profile photo preview">
+  <button class="profile-photo-dialog-close" type="button" data-close-profile-photo aria-label="Close photo preview">×</button>
+  <img data-profile-photo-enlarged alt="Enlarged profile photo">
+</dialog>
 {% endblock %}
