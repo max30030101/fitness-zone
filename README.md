@@ -21,7 +21,9 @@ python manage.py runserver
 Open http://127.0.0.1:8000/ and the admin panel at http://127.0.0.1:8000/admin/.
 
 Settings come from environment variables (see `.env.example`). Defaults work out of the box:
-SQLite database and a console email backend, so the **welcome email prints in your terminal**.
+SQLite database and a console email backend, so **verification and welcome emails print in your terminal**.
+To configure email locally, copy `.env.example` to `.env`, switch the backend to SMTP, and fill in the Gmail settings;
+settings in `.env` are loaded automatically.
 
 ## What is included
 
@@ -59,7 +61,10 @@ generator can replace or refine it later without changing views or templates. Pl
 ## Real email (Gmail example)
 
 Set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`,
-`EMAIL_USE_TLS=1`, `EMAIL_HOST_USER`, and an app password in `EMAIL_HOST_PASSWORD`.
+`EMAIL_USE_TLS=1`, `EMAIL_USE_SSL=0`, and `EMAIL_HOST_USER` to your Gmail address. Create a Google App Password
+(requires 2-Step Verification) and set it as `EMAIL_HOST_PASSWORD`; do not use your regular Gmail password.
+Set `DEFAULT_FROM_EMAIL` to the same Gmail address. Locally, put these settings in `.env`; on a host, configure
+them as environment variables. Restart the app after changing settings.
 
 ## PostgreSQL
 

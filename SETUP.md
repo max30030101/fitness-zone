@@ -6,6 +6,11 @@
 2. **Unzip** `fitness-zone.zip`. In VS Code choose **File > Open Folder** and open the `fitness-zone` folder.
 3. **Open a terminal** in VS Code (Terminal > New Terminal) and run these in order.
 
+   To send real email instead of printing it in the terminal, copy `.env.example` to `.env`, switch
+   `EMAIL_BACKEND` to `django.core.mail.backends.smtp.EmailBackend`, and uncomment/configure the Gmail SMTP settings.
+   Use a Google App Password (2-Step Verification must be enabled), not your regular Gmail password; set
+   `DEFAULT_FROM_EMAIL` to the same Gmail address as `EMAIL_HOST_USER`.
+
    Windows (PowerShell):
    ```powershell
    python -m venv venv
@@ -52,7 +57,7 @@ The project ships with `render.yaml`, `build.sh`, `Procfile` and a PostgreSQL se
 3. When asked, set `DJANGO_SUPERUSER_PASSWORD` (your admin password) and `DJANGO_SUPERUSER_EMAIL`.
 4. Click **Apply**. The first build takes a few minutes. Your site goes live at `https://fitforge-ai.onrender.com` (or the URL Render shows).
 5. Sign in at `/admin/` with username `admin` and the password you set. Add your real products, images and categories.
-6. **Real welcome emails:** in the Render dashboard open the service > Environment and add `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS=1`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` (for Gmail, use an app password) and `DEFAULT_FROM_EMAIL`.
+6. **Real verification and welcome emails:** in the Render dashboard open the service > Environment and add `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`, `EMAIL_USE_TLS=1`, `EMAIL_USE_SSL=0`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` (a Gmail App Password) and `DEFAULT_FROM_EMAIL` (the same address as `EMAIL_HOST_USER`).
 7. **Custom domain:** Render dashboard > Settings > Custom Domains. Then add the domain to `DJANGO_ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` (with `https://`), and set `SITE_URL`.
 
 Good to know before launch:
@@ -73,6 +78,8 @@ Any host that runs Python works: set the environment variables from `.env.exampl
 | Static files missing in production | Check the build log ran `collectstatic`; keep `DJANGO_DEBUG=0` |
 | `DisallowedHost` | Add your domain to `DJANGO_ALLOWED_HOSTS` |
 | CSRF verification failed on a live site | Add `https://your-domain` to `CSRF_TRUSTED_ORIGINS` |
+| Verification email only prints in the terminal | Set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` and configure Gmail SMTP credentials in `.env` or your host's environment |
+| Gmail SMTP authentication fails | Use an App Password with 2-Step Verification enabled; verify `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `DEFAULT_FROM_EMAIL` |
 
 ## Changing the website name
 
