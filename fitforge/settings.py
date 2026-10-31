@@ -81,7 +81,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "fitforge.wsgi.application"
 
-if os.environ.get("DATABASE_URL"):
+if os.environ.get("MYSQL_HOST"):
+    mysql_required_settings = ("MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_SSL_CA")
+    missing_mysql_settings = [name for name in mysql_required_settings if not os.environ.get(name)]
+    if missing_mysql_settings:
+        raise ValueError(
+            "Missing required Aiven MySQL settings: " + ", ".join(missing_mysql_settings)
+        )
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ["MYSQL_DATABASE"],
+            "USER": os.environ["MYSQL_USER"],
+            "PASSWORD": os.environ["MYSQL_PASSWORD"],
+            "HOST": os.environ["MYSQL_HOST"],
+            "PORT": os.environ.get("MYSQL_PORT", "3306"),
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {"ssl": {"ca": os.environ["MYSQL_SSL_CA"]}},
+        }
+    }
+elif os.environ.get("DATABASE_URL"):
     from urllib.parse import unquote, urlparse
 
     _db = urlparse(os.environ["DATABASE_URL"])

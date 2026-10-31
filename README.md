@@ -71,6 +71,27 @@ them as environment variables. Restart the app after changing settings.
 
 `pip install psycopg2-binary`, then set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`.
 
+## Aiven MySQL on Render
+
+The app can use Aiven MySQL when `MYSQL_HOST` is set. Create a MySQL service and database in Aiven, then add these
+environment variables to the Render web service:
+
+| Variable | Value |
+|---|---|
+| `MYSQL_HOST` | Aiven service hostname |
+| `MYSQL_PORT` | Port shown in Aiven's service details |
+| `MYSQL_DATABASE` | Aiven database name |
+| `MYSQL_USER` | Aiven database username |
+| `MYSQL_PASSWORD` | Aiven database password |
+| `MYSQL_SSL_CA` | Absolute path to the Aiven CA certificate |
+
+Download the CA certificate from Aiven and upload it in Render under **Secret Files**; set `MYSQL_SSL_CA` to its
+mounted path (for example, `/etc/secrets/ca.pem`). Keep the password and certificate private. `MYSQL_HOST` takes
+precedence over `DATABASE_URL`, so remove the old PostgreSQL variable only after confirming the Aiven connection.
+The deployment build runs migrations automatically. Back up or export existing data before switching databases;
+data is not copied automatically. Product images are files, not database records, and need separate persistent or
+cloud storage.
+
 ## Deploying
 
 Set `DJANGO_DEBUG=0`, a long random `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and `SITE_URL`;
