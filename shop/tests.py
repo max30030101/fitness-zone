@@ -1,11 +1,16 @@
 from datetime import timedelta
+from io import BytesIO
+import tempfile
 
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Permission
 from django.core import mail
+from django.core.files.storage import FileSystemStorage
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from .models import (
     AdminShopNotification,
@@ -17,6 +22,7 @@ from .models import (
     OrderStatusNotification,
     Product,
     SavedAddress,
+    StoredProductImage,
 )
 
 
@@ -745,3 +751,60 @@ class OrderHelpPopupTests(TestCase):
 
         self.assertContains(response, "Our support email is not configured yet.")
         self.assertNotContains(response, "mailto:")
+
+
+class ProductDatabaseImageStorageTests(TestCase):
+    def setUp(self):
+        self.category = Category.objects.create(name="Image category")
+
+    def make_image(self):
+        image = Image.new("RGB", (2, 2), color="blue")
+        content = BytesIO()
+        image.save(content, format="PNG")
+        image_bytes = content.getvalue()
+        return image_bytes, SimpleUploadedFile(
+            "product.png",
+            image_bytes,
+            content_type="image/png",
+        )
+
+    def test_product_image_is_stored_in_database_and_served_from_its_url(self):
+        image_bytes, uploaded_image = self.make_image()
+        product = Product.objects.create(
+            category=self.category,
+            name="Database image product",
+            price="10.00",
+            image=uploaded_image,
+        )
+
+        stored_image = StoredProductImage.objects.get(name=product.image.name)
+        self.assertEqual(stored_image.content, image_bytes)
+        self.assertEqual(product.image.url, reverse("shop:product_image", kwargs={"filename": "product.png"}))
+
+        response = self.client.get(product.image.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(b"".join(response.streaming_content), image_bytes)
+
+    def test_missing_database_product_image_returns_404(self):
+        response = self.client.get(
+            reverse("shop:product_image", kwargs={"filename": "missing.png"})
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_existing_local_product_image_is_imported_into_database_on_read(self):
+        image_bytes, uploaded_image = self.make_image()
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                legacy_storage = FileSystemStorage(location=media_root)
+                legacy_storage.save("products/legacy.png", uploaded_image)
+
+                response = self.client.get(
+                    reverse("shop:product_image", kwargs={"filename": "legacy.png"})
+                )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b"".join(response.streaming_content), image_bytes)
+        stored_image = StoredProductImage.objects.get(name="products/legacy.png")
+        self.assertEqual(stored_image.content, image_bytes)

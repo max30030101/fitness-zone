@@ -5,6 +5,7 @@ from . import views
 app_name = "shop"
 
 urlpatterns = [
+    path("media/products/<path:filename>", views.product_image, name="product_image"),
     path("shop/", views.shop, name="list"),
     path("shop/category/<slug:slug>/", views.shop, name="category"),
     path("product/<slug:slug>/", views.product_detail, name="detail"),

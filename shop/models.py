@@ -6,6 +6,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
+from .storage import DatabaseProductImageStorage
+
 
 def unique_slug(instance, source, field="slug"):
     base = slugify(source) or "item"
@@ -55,6 +57,19 @@ class Category(models.Model):
         return CATEGORY_ICONS.get(self.slug, "dumbbell")
 
 
+class StoredProductImage(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    content = models.BinaryField()
+    content_type = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
     name = models.CharField(max_length=160)
@@ -65,7 +80,7 @@ class Product(models.Model):
     price = models.DecimalField("MRP (₹)", max_digits=10, decimal_places=2)
     discount_price = models.DecimalField("Sale price (₹)", max_digits=10, decimal_places=2, null=True, blank=True)
     stock = models.PositiveIntegerField(default=0)
-    image = models.ImageField(upload_to="products/", blank=True)
+    image = models.ImageField(upload_to="products/", blank=True, storage=DatabaseProductImageStorage())
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True, help_text="Untick to hide from the shop.")
     created_at = models.DateTimeField(auto_now_add=True)

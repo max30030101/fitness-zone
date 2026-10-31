@@ -96,7 +96,9 @@ cloud storage.
 
 Set `DJANGO_DEBUG=0`, a long random `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and `SITE_URL`;
 run `python manage.py collectstatic`; serve with `gunicorn fitforge.wsgi`. WhiteNoise serves static files. Uploaded
-product images need persistent storage (a volume or S3-compatible storage).
+product images are stored in the configured Django database, so they persist across web-service redeploys. This
+increases database storage and backup usage. Existing images still present on the server are imported to the
+database the first time they are requested; images already lost from temporary storage must be uploaded again.
 
 ## Git and GitHub
 

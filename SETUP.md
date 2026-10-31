@@ -70,10 +70,14 @@ to Render under **Secret Files** and set `MYSQL_SSL_CA` to its mounted path, for
 The app uses MySQL whenever `MYSQL_HOST` is set, even if a PostgreSQL `DATABASE_URL` remains. After deploying,
 check the build logs for successful migrations and confirm the site/admin works. Back up existing PostgreSQL data
 before switching; it is not automatically transferred. Keep product-image storage configured separately because
-database migration does not copy uploaded files.
+database migration does not copy uploaded files. Product images uploaded after the database-image-storage update
+are stored as binary data in the configured MySQL database and remain available after redeploys. This uses database
+storage and increases backup size. Existing images still on the server are imported into MySQL the first time they
+are requested. Images already missing from the web server's temporary disk cannot be recovered from their database
+paths and must be uploaded again.
 
 Good to know before launch:
-- **Uploaded product images** are stored on the server's disk, which free hosting wipes on redeploy. For a real store, attach a persistent disk (set `MEDIA_ROOT` to its path and `SERVE_MEDIA=1`) or move to cloud storage such as S3. Check Render's current free-tier limits (sleeping services, database retention) before relying on it for customers.
+- **Uploaded product images** are stored in MySQL so they survive web-service redeploys. Keep the Aiven database provisioned with enough storage and include it in regular backups; large image collections will increase database size.
 - Change `SEED_DEMO` to `0` after the first deploy if you don't want demo products re-added.
 - Always keep `DJANGO_DEBUG=0` in production.
 

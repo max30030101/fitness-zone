@@ -1,24 +1,28 @@
+import mimetypes
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.core.files.storage import FileSystemStorage
 from django.db import transaction
 from django.db.models import Count, Max, Min, Q
 from django.db.models.functions import Coalesce
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from workouts.library import featured_workouts
 
 from .forms import CheckoutForm, SavedAddressForm
 from .invoices import build_invoice_pdf
 from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Product, SavedAddress, shipping_for
+from .storage import DatabaseProductImageStorage
 
 PER_PAGE = 12
 SORTS = [
@@ -45,6 +49,30 @@ def _decimal(value):
 
 def _active_categories():
     return Category.objects.annotate(n=Count("products", filter=Q(products__is_active=True)))
+
+
+@require_GET
+def product_image(request, filename):
+    storage = DatabaseProductImageStorage()
+    image_name = f"products/{filename}"
+    try:
+        image = storage.open(image_name)
+    except FileNotFoundError:
+        legacy_storage = FileSystemStorage(location=settings.MEDIA_ROOT)
+        try:
+            legacy_image = legacy_storage.open(image_name)
+        except FileNotFoundError as exc:
+            raise Http404("Product image not found.") from exc
+        with legacy_image:
+            storage.save(image_name, legacy_image)
+        image = storage.open(image_name)
+    response = FileResponse(
+        image,
+        content_type=image.content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream",
+    )
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 # ---------------------------------------------------------------- browsing

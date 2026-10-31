@@ -22,7 +22,7 @@
   color: var(--body-fg, #f5f7f2);
   background: var(--body-bg, #151b17);
   border: 1px solid var(--hairline-color, #526052);
-  border-left: 6px solid #b7ff45;
+  border-left: 6px solid #79aec8;
   border-radius: 10px;
   box-shadow: 0 8px 30px rgb(0 0 0 / 35%);
   font-size: 1rem;
@@ -49,6 +49,7 @@
 }
 
 .admin-order-alert a:hover {
+  color: var(--link-hover-color, #036);
   text-decoration: underline;
 }
 
@@ -61,6 +62,16 @@
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
+}
+
+.admin-order-alert__close:hover {
+  color: var(--body-fg, #333);
+  background: var(--selected-bg, #e4e4e4);
+}
+
+.admin-order-alert__close:focus-visible {
+  outline: 2px solid var(--primary, #79aec8);
+  outline-offset: 2px;
 }
 
 @keyframes admin-alert-in {
