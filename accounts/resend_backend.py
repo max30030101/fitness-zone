@@ -21,8 +21,7 @@ class ResendEmailBackend(BaseEmailBackend):
         sent = 0
 
         for message in email_messages:
-            sender = message.from_email or default_sender
-
+            sender = default_sender or message.from_email
             if not sender:
                 raise ImproperlyConfigured("RESEND_FROM_EMAIL is missing.")
 
