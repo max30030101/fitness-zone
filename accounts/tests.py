@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.mail import get_connection
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -12,6 +13,13 @@ from .models import EmailVerification
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", SITE_URL="https://example.test")
 class EmailVerificationFlowTests(TestCase):
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
+        EMAIL_TIMEOUT=7,
+    )
+    def test_smtp_connection_uses_configured_timeout(self):
+        self.assertEqual(get_connection().timeout, 7)
+
     def test_registration_creates_inactive_user_and_sends_code(self):
         response = self.client.post(reverse("accounts:register"), {
             "first_name": "Test", "username": "testuser", "email": "test@example.com",

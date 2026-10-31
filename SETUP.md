@@ -8,8 +8,9 @@
 
    To send real email instead of printing it in the terminal, copy `.env.example` to `.env`, switch
    `EMAIL_BACKEND` to `django.core.mail.backends.smtp.EmailBackend`, and uncomment/configure the Gmail SMTP settings.
-   Use a Google App Password (2-Step Verification must be enabled), not your regular Gmail password; set
-   `DEFAULT_FROM_EMAIL` to the same Gmail address as `EMAIL_HOST_USER`.
+   Connections time out after 10 seconds by default (`EMAIL_TIMEOUT`). Use a Google App Password
+   (2-Step Verification must be enabled), not your regular Gmail password; set `DEFAULT_FROM_EMAIL` to the same
+   Gmail address as `EMAIL_HOST_USER`.
 
    Windows (PowerShell):
    ```powershell

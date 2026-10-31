@@ -61,7 +61,8 @@ generator can replace or refine it later without changing views or templates. Pl
 ## Real email (Gmail example)
 
 Set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`,
-`EMAIL_USE_TLS=1`, `EMAIL_USE_SSL=0`, and `EMAIL_HOST_USER` to your Gmail address. Create a Google App Password
+`EMAIL_USE_TLS=1`, `EMAIL_USE_SSL=0`, and `EMAIL_HOST_USER` to your Gmail address. Email connections time out
+after 10 seconds by default (`EMAIL_TIMEOUT`). Create a Google App Password
 (requires 2-Step Verification) and set it as `EMAIL_HOST_PASSWORD`; do not use your regular Gmail password.
 Set `DEFAULT_FROM_EMAIL` to the same Gmail address. Locally, put these settings in `.env`; on a host, configure
 them as environment variables. Restart the app after changing settings.
