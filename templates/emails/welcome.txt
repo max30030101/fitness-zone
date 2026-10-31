@@ -1,0 +1,12 @@
+Hi {{ name }},
+
+Welcome to {{ site_name }}. Your account is ready.
+
+Start here:
+1. Build your personalised plan: {{ site_url }}/workouts/recommend/
+2. Browse the workout library: {{ site_url }}/workouts/library/
+3. Shop gear: {{ site_url }}/shop/
+
+Small steps, real progress. Start where you are.
+
+The {{ site_name }} team

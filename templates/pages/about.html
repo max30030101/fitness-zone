@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap medium">
+  <span class="eyebrow">About</span>
+  <h1>Train smarter. Shop better. Become stronger.</h1>
+  <p class="lead">{{ site_name }} brings workouts, progress tracking and sports gear into one place, so you can spend less time figuring things out and more time training.</p>
+
+  <h2 style="margin-top:2.5rem">What you can do here</h2>
+  <div class="grid-3" style="margin-top:1rem">
+    <div class="tile"><svg class="ico" aria-hidden="true"><use href="#i-dumbbell"/></svg><h3>Train</h3><p>Follow ready-made workouts or let the AI Coach build a weekly plan around your goal, equipment and schedule.</p></div>
+    <div class="tile"><svg class="ico" aria-hidden="true"><use href="#i-chart"/></svg><h3>Track</h3><p>Log sessions and body weight. Your dashboard shows only what you've recorded.</p></div>
+    <div class="tile"><svg class="ico" aria-hidden="true"><use href="#i-bag"/></svg><h3>Shop</h3><p>Browse gear by category, filter by price, save favourites and order with cash on delivery.</p></div>
+  </div>
+
+  <h2 style="margin-top:2.5rem">How we think about it</h2>
+  <ul class="article">
+    <li><strong>Start small.</strong> A short session you finish beats a perfect plan you skip.</li>
+    <li><strong>Be honest.</strong> You don't need expensive equipment, and we'd rather suggest what fits your goal and budget than sell you everything.</li>
+    <li><strong>Respect your pace.</strong> Rest days and restarts are part of the journey.</li>
+    <li><strong>No invented numbers.</strong> Streaks, charts and achievements come from real sessions you log.</li>
+  </ul>
+
+  <h2 style="margin-top:2.5rem">Good to know</h2>
+  <p class="muted">The AI Coach is a rule-based recommendation engine and isn't connected to an external AI model. Workout plans are general guidance, not medical advice or a guarantee of results. If you have a health condition, feel pain or are unsure, talk to a doctor or qualified professional.</p>
+  <p style="margin-top:1.5rem"><a class="btn" href="{% url 'workouts:recommend' %}">Build my plan</a> <a class="btn btn-ghost" href="{% url 'shop:list' %}">Explore the shop</a></p>
+</div></section>
+{% endblock %}

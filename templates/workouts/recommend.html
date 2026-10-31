@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}AI Coach{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap narrow">
+  <span class="eyebrow">AI Coach</span>
+  <h1>Build your weekly plan</h1>
+  <p class="muted">Answer five questions and get a structured week of exercises with sets, reps and rest, chosen for your level and equipment. A new plan replaces your active one; old plans stay in your plan list.</p>
+  <p class="notice">This coach is a rule-based recommendation engine, not a connected AI chatbot. Plans are general guidance, not medical advice, and results aren't guaranteed.</p>
+  <form method="post" class="form" style="margin-top:1.6rem" data-loading="Building your plan…" data-buddy-submit="Building your plan…">
+    {% csrf_token %}
+    {% include "partials/_form_fields.html" %}
+    <button type="submit" class="btn btn-large">Generate my plan</button>
+  </form>
+</div></section>
+{% include "partials/_buddy.html" with buddy_message="Tell me about your week and I'll help you plan it." %}
+{% endblock %}

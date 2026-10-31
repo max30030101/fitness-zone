@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }}{% endblock %}
+{% block meta_desc %}{{ a.lesson }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap medium article">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'home' %}">Home</a><a href="{% url 'pages:mindset' %}">Mindset</a><span>{{ a.title }}</span></nav>
+  <span class="badge">{{ a.minutes }} min read</span>
+  <h1 style="margin-top:.8rem">{{ a.title }}</h1>
+
+  <h2>Sound familiar?</h2>
+  <blockquote>{{ a.situation }}</blockquote>
+
+  <h2>What helps</h2>
+  <p>{{ a.lesson }}</p>
+
+  <h2>Try this</h2>
+  <ul>{% for action in a.actions %}<li>{{ action }}</li>{% endfor %}</ul>
+
+  <p style="margin-top:2rem"><a class="btn" href="{{ link_url }}">{{ link_label }}</a></p>
+  <p class="muted small">General guidance only, not medical advice.</p>
+
+  <div class="section-head" style="margin-top:3.5rem"><h2 style="margin:0;color:var(--text)">Keep reading</h2></div>
+  <div class="grid-3">
+    {% for o in others %}<a class="article-card" href="{% url 'pages:article' o.slug %}"><span class="badge">{{ o.minutes }} min read</span><h3>{{ o.title }}</h3></a>{% endfor %}
+  </div>
+</div></section>
+{% endblock %}

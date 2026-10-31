@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Mindset &amp; Momentum{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <span class="eyebrow">Mindset &amp; Momentum</span>
+  <h1>Small steps. Real progress.</h1>
+  <p class="lead">Short, practical reads on starting, staying consistent and being kind to yourself along the way.</p>
+  <div class="grid-3" style="margin-top:2rem">
+    {% for a in articles %}
+    <a class="article-card" href="{% url 'pages:article' a.slug %}">
+      <span class="badge">{{ a.minutes }} min read</span>
+      <h3>{{ a.title }}</h3>
+      <p>{{ a.situation }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

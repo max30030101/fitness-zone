@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Workout library{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <span class="eyebrow">Workout library</span>
+  <h1>Find a workout that fits today</h1>
+  <p class="muted">Ready-made sessions for every level. Filter by goal, time and equipment, then follow along and mark it complete.</p>
+
+  <form method="get" class="filters" style="position:static;margin:1.5rem 0 2rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;align-items:end">
+    <div class="field" style="margin:0"><label for="f-level">Level</label>
+      <select id="f-level" name="level" data-autosubmit><option value="">Any level</option>{% for k, v in levels %}<option value="{{ k }}"{% if sel.level == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field" style="margin:0"><label for="f-goal">Goal</label>
+      <select id="f-goal" name="goal" data-autosubmit><option value="">Any goal</option>{% for k, v in goals %}<option value="{{ k }}"{% if sel.goal == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field" style="margin:0"><label for="f-dur">Duration</label>
+      <select id="f-dur" name="duration" data-autosubmit><option value="">Any length</option>{% for k, v in durations %}<option value="{{ k }}"{% if sel.duration == k|stringformat:"s" %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+    <div class="field" style="margin:0"><label for="f-eq">Equipment</label>
+      <select id="f-eq" name="equipment" data-autosubmit><option value="">Any equipment</option>{% for k, v in equipment %}<option value="{{ k }}"{% if sel.equipment == k %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+    {% if has_filters %}<a class="text-link" href="{% url 'workouts:library' %}">Clear filters</a>{% endif %}
+    <noscript><button class="btn" type="submit">Apply</button></noscript>
+  </form>
+
+  <p class="muted"><strong>{{ total }}</strong> workout{{ total|pluralize }}</p>
+  {% if workouts %}
+  <div class="grid-3">
+    {% for w in workouts %}
+    <a class="wk-card" href="{% url 'workouts:library_detail' w.slug %}">
+      <span class="badge badge-lime">{{ w.level_label }}</span>
+      <h3>{{ w.title }}</h3>
+      <p>{{ w.summary }}</p>
+      <div class="wk-meta"><span class="badge">{{ w.duration }} min</span><span class="badge">{{ w.goal_label }}</span><span class="badge">{{ w.equipment_label }}</span></div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="empty"><h2>No workouts match</h2><p>Try widening a filter, such as a longer duration or any equipment.</p><a class="btn" href="{% url 'workouts:library' %}">Clear filters</a></div>
+  {% endif %}
+</div></section>
+{% endblock %}

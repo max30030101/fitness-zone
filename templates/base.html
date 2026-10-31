@@ -1,0 +1,124 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b0a">
+  <title>{% block title %}Train smarter, shop better{% endblock %} | {{ site_name }}</title>
+  <meta name="description" content="{% block meta_desc %}{{ site_name }}: personalised workouts, progress tracking and sports gear in one place. Train smarter. Shop better. Become stronger.{% endblock %}">
+  <script>
+    (function () {
+      var d = document.documentElement; d.classList.add("js");
+      try {
+        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!reduce && !localStorage.getItem("fz_intro_seen")) d.classList.add("intro-on");
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+{% include "partials/_icons.html" %}
+<a class="skip" href="#main">Skip to content</a>
+{% block intro %}{% endblock %}
+
+{% if announcement %}<div class="announce"><p>{{ announcement }}</p></div>{% endif %}
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{% url 'home' %}" aria-label="{{ site_name }} home">{{ brand_main }}{% if brand_accent %}<span>{{ brand_accent }}</span>{% endif %}</a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+
+    <nav id="site-nav" class="nav" aria-label="Main">
+      <a href="{% url 'home' %}"{% if request.path == '/' %} aria-current="page"{% endif %}>Home</a>
+      <a href="{% url 'workouts:library' %}"{% if '/workouts/library' in request.path %} aria-current="page"{% endif %}>Workouts</a>
+      <a href="{% url 'workouts:recommend' %}"{% if '/workouts/recommend' in request.path %} aria-current="page"{% endif %}>AI Coach</a>
+      <a href="{% url 'shop:list' %}"{% if '/shop' in request.path or '/product' in request.path %} aria-current="page"{% endif %}>Shop</a>
+      <a href="{% url 'pages:mindset' %}"{% if '/mindset' in request.path %} aria-current="page"{% endif %}>Mindset</a>
+      <a href="{% url 'pages:about' %}"{% if request.path == '/about/' %} aria-current="page"{% endif %}>About</a>
+    </nav>
+
+    <form class="search" action="{% url 'shop:list' %}" method="get" role="search">
+      <input type="search" name="q" placeholder="Search gear" aria-label="Search products">
+      <button type="submit" aria-label="Search"><svg class="ico" aria-hidden="true"><use href="#i-search"/></svg></button>
+    </form>
+
+    <div class="actions">
+      <a class="icon-link" href="{% url 'shop:favourites' %}" aria-label="Favourites ({{ fav_count }})">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span class="count" data-fav-count{% if not fav_count %} hidden{% endif %}>{{ fav_count }}</span>
+      </a>
+      <a class="icon-link" href="{% url 'shop:cart' %}">Cart{% if cart_count %} <span class="count" data-cart-count>{{ cart_count }}</span>{% endif %}</a>
+      {% if user.is_authenticated %}
+        <a class="icon-link" href="{% url 'workouts:dashboard' %}">Dashboard</a>
+        <a class="icon-link" href="{% url 'accounts:profile' %}">{{ user.first_name|default:user.username }}</a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}<button type="submit" class="link-btn">Log out</button></form>
+      {% else %}
+        <a class="icon-link" href="{% url 'accounts:login' %}">Login</a>
+        <a class="btn btn-small" href="{% url 'accounts:register' %}">Register</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="toasts" role="status" aria-live="polite">
+  {% for message in messages %}
+    <div class="toast toast-{{ message.level_tag }}">
+      {% if message.level_tag == "success" %}<svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7 12.5 3.2 3.2L17 9"/></svg>{% endif %}
+      <p>{{ message }}</p><button type="button" aria-label="Dismiss message">×</button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<main id="main">{% block content %}{% endblock %}</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <div>
+      <p class="brand">{{ brand_main }}{% if brand_accent %}<span>{{ brand_accent }}</span>{% endif %}</p>
+      <p class="muted">Train smarter. Shop better. Become stronger.</p>
+    </div>
+    <div>
+      <h2>Shop</h2>
+      <ul>
+        <li><a href="{% url 'shop:list' %}">All products</a></li>
+        {% for c in nav_categories %}<li><a href="{{ c.get_absolute_url }}">{{ c.name }}</a></li>{% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h2>Train</h2>
+      <ul>
+        <li><a href="{% url 'workouts:library' %}">Workout library</a></li>
+        <li><a href="{% url 'workouts:recommend' %}">AI Coach</a></li>
+        <li><a href="{% url 'workouts:dashboard' %}">Dashboard</a></li>
+        <li><a href="{% url 'pages:mindset' %}">Mindset &amp; Momentum</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Account</h2>
+      <ul>
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'accounts:profile' %}">Profile</a></li>
+          <li><a href="{% url 'shop:orders' %}">Your orders</a></li>
+        {% else %}
+          <li><a href="{% url 'accounts:login' %}">Login</a></li>
+          <li><a href="{% url 'accounts:register' %}">Register</a></li>
+        {% endif %}
+        <li><a href="{% url 'shop:favourites' %}">Favourites</a></li>
+        <li><a href="{% url 'shop:cart' %}">Cart</a></li>
+        <li><a href="{% url 'pages:about' %}">About us</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap legal"><p class="muted">© {% now "Y" %} {{ site_name }}. Workout plans are general guidance, not medical advice. Talk to a doctor before starting a new exercise programme if you have a health concern.</p></div>
+</footer>
+
+<script src="{% static 'js/main.js' %}" defer></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

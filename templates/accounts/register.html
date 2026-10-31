@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Create your account{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="auth-art" aria-hidden="true">
+    {% include "partials/_athlete.html" with cls="" %}
+    <h2>Your journey. <em>Your pace.</em></h2>
+  </div>
+  <div class="auth-form">
+    <div class="form">
+      <span class="eyebrow">Register</span>
+      <h1>Start your journey</h1>
+      <p class="muted">Free to join. You'll get a welcome email and a plan built around your goal.</p>
+      <form method="post" novalidate data-loading="Creating your account…" data-buddy-submit="Setting things up…">
+        {% csrf_token %}
+        {% include "partials/_form_fields.html" %}
+        <button type="submit" class="btn btn-block btn-large">Create account</button>
+      </form>
+      <p class="muted" style="margin-top:1.2rem">Already a member? <a href="{% url 'accounts:login' %}">Login</a></p>
+    </div>
+  </div>
+</section>
+{% include "partials/_buddy.html" with buddy_message="Your journey starts here!" %}
+{% endblock %}

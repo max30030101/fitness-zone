@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="auth-art" aria-hidden="true">
+    {% include "partials/_athlete.html" with cls="" %}
+    <h2>Welcome back. <em>Let's get stronger.</em></h2>
+  </div>
+  <div class="auth-form">
+    <div class="form">
+      <span class="eyebrow">Login</span>
+      <h1>Welcome back</h1>
+      <p class="muted">Sign in with your username or email.</p>
+      <form method="post" data-loading="Signing in…" data-buddy-submit="Checking your details…">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% include "partials/_form_fields.html" %}
+        <button type="submit" class="btn btn-block btn-large">Login</button>
+      </form>
+      <p style="margin-top:1.2rem"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a></p>
+      <p class="muted">New here? <a href="{% url 'accounts:register' %}">Create a free account</a></p>
+    </div>
+  </div>
+</section>
+{% include "partials/_buddy.html" with buddy_message="Ready to get stronger?" %}
+{% endblock %}

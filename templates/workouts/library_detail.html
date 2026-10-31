@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ w.title }}{% endblock %}
+{% block meta_desc %}{{ w.summary }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap medium">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'home' %}">Home</a><a href="{% url 'workouts:library' %}">Workouts</a><span>{{ w.title }}</span></nav>
+  <span class="badge badge-lime">{{ w.level_label }}</span>
+  <h1 style="margin-top:.8rem">{{ w.title }}</h1>
+  <p class="lead">{{ w.summary }}</p>
+  <p><span class="badge">{{ w.duration }} min</span> <span class="badge">{{ w.goal_label }}</span> <span class="badge">{{ w.equipment_label }}</span></p>
+  <p class="notice">Warm up for 5 to 10 minutes first. Stop if anything hurts, and talk to a doctor if you have a health concern.</p>
+
+  <div style="margin-top:2rem" data-tracker>
+    <div class="section-head" style="margin-bottom:.5rem"><h2 style="font-size:1.6rem">Exercises</h2><p class="muted small" style="margin:0" data-progress-text></p></div>
+    <div class="progress"><span data-progress-fill></span></div>
+    <ol class="tracker">
+      {% for e in w.exercises %}
+      <li>
+        <div><h3>{{ forloop.counter }}. {{ e.name }}</h3><span class="cue muted">{{ e.cue }}</span></div>
+        <div class="muted" style="text-align:right;font-size:.9rem">{{ e.sets }} × {{ e.reps }}<br>rest {{ e.rest }} sec</div>
+        <div class="sets">
+          {% for i in "123456"|make_list %}{% if forloop.counter <= e.sets %}<label><input type="checkbox" aria-label="{{ e.name }}, set {{ forloop.counter }}"> Set {{ forloop.counter }}</label>{% endif %}{% endfor %}
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <div style="margin-top:2rem">
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'workouts:library_complete' w.slug %}" data-loading="Saving…">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-large">Mark workout complete</button>
+      </form>
+      <p class="muted small" style="margin-top:.6rem">This records a {{ w.duration }}-minute session in your history and dashboard.</p>
+    {% else %}
+      <p><a class="btn btn-large" href="{% url 'accounts:login' %}?next={{ request.path }}">Login to track this workout</a></p>
+      <p class="muted small">No account yet? <a href="{% url 'accounts:register' %}">Create one for free</a>. You can read and follow any workout without one.</p>
+    {% endif %}
+  </div>
+
+  {% if related %}
+  <div class="section-head" style="margin-top:3.5rem"><h2>More {{ w.level_label|lower }} workouts</h2></div>
+  <div class="grid-3">
+    {% for r in related %}<a class="wk-card" href="{% url 'workouts:library_detail' r.slug %}"><span class="badge badge-lime">{{ r.level_label }}</span><h3>{{ r.title }}</h3><p>{{ r.summary }}</p><div class="wk-meta"><span class="badge">{{ r.duration }} min</span></div></a>{% endfor %}
+  </div>
+  {% endif %}
+</div></section>
+{% endblock %}
