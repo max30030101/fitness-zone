@@ -60,6 +60,7 @@ The project ships with `render.yaml`, `build.sh`, `Procfile` and a PostgreSQL se
 5. Sign in at `/admin/` with username `admin` and the password you set. Add your real products, images and categories.
 6. **Real verification and welcome emails:** in the Render dashboard open the service > Environment and add `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`, `EMAIL_USE_TLS=1`, `EMAIL_USE_SSL=0`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` (a Gmail App Password) and `DEFAULT_FROM_EMAIL` (the same address as `EMAIL_HOST_USER`).
 7. **Custom domain:** Render dashboard > Settings > Custom Domains. Then add the domain to `DJANGO_ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` (with `https://`), and set `SITE_URL`.
+8. **Free best-effort website wake-up:** the repository includes a GitHub Actions workflow that requests the homepage every 10 minutes. In GitHub, open **Settings > Secrets and variables > Actions > Variables**, create a repository variable named `WEBSITE_URL` with your public URL (for example, `https://your-service.onrender.com`), and push the workflow to the repository's default branch. You can also start it manually from the **Actions** tab. GitHub-hosted runs are free for public repositories; private repositories may use the account's Actions minutes. Scheduled runs can be delayed or skipped, so this cannot guarantee that Render stays awake.
 
 ### Connect Aiven MySQL
 
@@ -75,6 +76,15 @@ are stored as binary data in the configured MySQL database and remain available 
 storage and increases backup size. Existing images still on the server are imported into MySQL the first time they
 are requested. Images already missing from the web server's temporary disk cannot be recovered from their database
 paths and must be uploaded again.
+
+The repository includes an hourly GitHub Actions workflow that connects to Aiven MySQL over verified TLS and runs
+`SELECT 1`. In GitHub, open **Settings > Secrets and variables > Actions > Secrets** and add `MYSQL_HOST`,
+`MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_SSL_CA`. Set `MYSQL_SSL_CA` to the
+contents of the CA certificate PEM file (not a local file path). Push the workflow to the repository's default branch;
+you can also run it manually from the **Actions** tab. GitHub-hosted runs are free for public repositories; private
+repositories may use the account's Actions minutes, and scheduled runs can be delayed or skipped. After syncing the
+Render Blueprint, verify the old `fitnesszone-aiven-ping` paid Cron service is removed in the Render dashboard; delete
+it there if it remains. Pinging does not override Aiven plan limits or guarantee that a service will stay active.
 
 Good to know before launch:
 - **Uploaded product images and profile photos** are stored in MySQL so they survive web-service redeploys. Keep the Aiven database provisioned with enough storage and include it in regular backups; image collections will increase database size. Existing photos still on the server are imported into MySQL the first time they are requested. Images already missing from the server's temporary disk must be uploaded again.
