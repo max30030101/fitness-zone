@@ -135,9 +135,9 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "workouts:dashboard"
 LOGOUT_REDIRECT_URL = "home"
 
-# Email (welcome email). Console backend by default so it works with zero setup.
-EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+# Email (Gmail SMTP by default; set credentials in environment variables).
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", "1")
 EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", "0")
@@ -145,7 +145,7 @@ if EMAIL_USE_TLS and EMAIL_USE_SSL:
     raise ValueError("Set only one of EMAIL_USE_TLS or EMAIL_USE_SSL to true.")
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"{SITE_NAME} <no-reply@fitnesszone.example>")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or f"{SITE_NAME} <no-reply@fitnesszone.example>")
 
 # Shop rules (INR)
 FREE_SHIPPING_THRESHOLD = 999
