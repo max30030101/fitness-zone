@@ -5,12 +5,13 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
+from .invoices import build_invoice_pdf
 from .models import CartItem, Order, Product
 
 logger = logging.getLogger(__name__)
 
 
-def _send_email(user, subject, template, context, event):
+def _send_email(user, subject, template, context, event, attachments=()):
     if not user.email:
         return False
     try:
@@ -20,10 +21,52 @@ def _send_email(user, subject, template, context, event):
             settings.DEFAULT_FROM_EMAIL,
             [user.email],
         )
+        for attachment in attachments:
+            message.attach(*attachment)
         return message.send(fail_silently=False) == 1
     except Exception:
         logger.exception("%s email failed for user id %s", event, user.pk)
         return False
+
+
+def send_order_placed_email(order_id):
+    try:
+        order = (
+            Order.objects.select_related("user")
+            .prefetch_related("items")
+            .get(pk=order_id)
+        )
+    except Order.DoesNotExist:
+        logger.warning("Order confirmation email skipped: order id %s no longer exists", order_id)
+        return False
+
+    if not order.user.email:
+        return False
+
+    try:
+        invoice = build_invoice_pdf(order)
+    except Exception:
+        logger.exception("Order confirmation invoice failed for order id %s", order_id)
+        return False
+
+    return _send_email(
+        order.user,
+        f"Order #{order.pk} placed — {settings.SITE_NAME}",
+        "emails/order_confirmation.txt",
+        {
+            "name": order.user.first_name or order.user.username,
+            "order": order,
+            "order_url": f"{settings.SITE_URL.rstrip('/')}{reverse('shop:order_success', args=[order.pk])}",
+            "invoice_url": f"{settings.SITE_URL.rstrip('/')}{reverse('shop:order_invoice', args=[order.pk])}",
+            "site_name": settings.SITE_NAME,
+        },
+        "Order confirmation",
+        attachments=[(
+            f"order-{order.pk}-invoice.pdf",
+            invoice.content,
+            "application/pdf",
+        )],
+    )
 
 
 def send_order_status_email(order_id, old_status, new_status):

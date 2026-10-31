@@ -1,0 +1,10 @@
+Hi {{ name }},
+
+Thanks for your order! Order #{{ order.pk }} has been placed with {{ site_name }}.
+
+View your order: {{ order_url }}
+View or download your invoice: {{ invoice_url }}
+
+A PDF copy of your invoice is attached to this email.
+
+Thank you for shopping with {{ site_name }}.

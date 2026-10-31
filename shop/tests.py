@@ -501,6 +501,39 @@ class CheckoutAddressTests(TestCase):
         values.update(overrides)
         return SavedAddress.objects.create(**values)
 
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        SITE_URL="https://example.test",
+    )
+    def test_checkout_sends_confirmation_with_order_link_and_invoice(self):
+        self.client.force_login(self.user)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(reverse("shop:checkout"), {
+                "full_name": "Checkout Customer",
+                "phone": "9876543210",
+                "address_line": "12 Green Road",
+                "city": "Pune",
+                "state": "Maharashtra",
+                "pincode": "411001",
+            })
+
+        order = Order.objects.get(user=self.user)
+        self.assertRedirects(response, reverse("shop:order_success", args=[order.pk]))
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertEqual(message.to, ["address-customer@example.test"])
+        self.assertIn(
+            f"https://example.test{reverse('shop:order_success', args=[order.pk])}",
+            message.body,
+        )
+        self.assertIn(
+            f"https://example.test{reverse('shop:order_invoice', args=[order.pk])}",
+            message.body,
+        )
+        self.assertEqual(len(message.attachments), 1)
+        self.assertTrue(message.attachments[0][1].startswith(b"%PDF-"))
+
     def test_checkout_lists_saved_addresses_and_prefills_selected_address(self):
         address = self.make_address()
         self.client.force_login(self.user)

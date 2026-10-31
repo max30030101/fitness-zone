@@ -19,6 +19,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from workouts.library import featured_workouts
 
+from .emails import send_order_placed_email
 from .forms import CheckoutForm, SavedAddressForm
 from .invoices import build_invoice_pdf
 from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Product, SavedAddress, shipping_for
@@ -292,6 +293,8 @@ def checkout(request):
                         p.stock -= i.quantity
                         p.save(update_fields=["stock"])
                     cart.items.all().delete()
+                    order_id = order.pk
+                    transaction.on_commit(lambda: send_order_placed_email(order_id))
             except ValueError as exc:
                 messages.error(request, str(exc))
                 return redirect("shop:cart")
