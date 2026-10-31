@@ -77,7 +77,7 @@ are requested. Images already missing from the web server's temporary disk canno
 paths and must be uploaded again.
 
 Good to know before launch:
-- **Uploaded product images** are stored in MySQL so they survive web-service redeploys. Keep the Aiven database provisioned with enough storage and include it in regular backups; large image collections will increase database size.
+- **Uploaded product images and profile photos** are stored in MySQL so they survive web-service redeploys. Keep the Aiven database provisioned with enough storage and include it in regular backups; image collections will increase database size. Existing photos still on the server are imported into MySQL the first time they are requested. Images already missing from the server's temporary disk must be uploaded again.
 - Change `SEED_DEMO` to `0` after the first deploy if you don't want demo products re-added.
 - Always keep `DJANGO_DEBUG=0` in production.
 

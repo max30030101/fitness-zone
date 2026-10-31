@@ -9,6 +9,7 @@ app_name = "accounts"
 _brand = {"brand": settings.SITE_NAME}
 
 urlpatterns = [
+    path("profile-photo/<path:filename>", views.profile_photo, name="profile_photo"),
     path("register/", views.register, name="register"),
     path("verify-email/", views.verify_email, name="verify_email"),
     path("resend-verification/", views.resend_verification, name="resend_verification"),

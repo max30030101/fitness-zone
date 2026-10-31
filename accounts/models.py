@@ -3,6 +3,7 @@ from django.core.validators import FileExtensionValidator, MaxValueValidator, Mi
 from django.db import models
 
 from .choices import EQUIPMENT, GOALS, LEVELS
+from .storage import DatabaseProfilePhotoStorage
 
 
 class Profile(models.Model):
@@ -10,6 +11,7 @@ class Profile(models.Model):
     photo = models.ImageField(
         upload_to="profile_photos/",
         blank=True,
+        storage=DatabaseProfilePhotoStorage(),
         validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],
     )
     phone = models.CharField(max_length=15, blank=True)
@@ -33,6 +35,19 @@ class Profile(models.Model):
             m = self.height_cm / 100
             return round(float(self.weight_kg) / (m * m), 1)
         return None
+
+
+class StoredProfilePhoto(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    content = models.BinaryField()
+    content_type = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class EmailVerification(models.Model):

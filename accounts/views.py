@@ -1,4 +1,5 @@
 import hashlib
+import mimetypes
 import secrets
 from datetime import timedelta
 
@@ -7,7 +8,9 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.files.storage import FileSystemStorage
 from django.db import transaction
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -15,6 +18,7 @@ from django.views.decorators.http import require_http_methods
 from .emails import send_verification_email, send_welcome_email
 from .forms import ProfileForm, RegisterForm
 from .models import EmailVerification
+from .storage import DatabaseProfilePhotoStorage
 
 OTP_TTL_MINUTES = 10
 OTP_RESEND_SECONDS = 60
@@ -178,3 +182,26 @@ def profile(request):
         messages.success(request, "Profile saved. New plans will use these settings.")
         return redirect("accounts:profile")
     return render(request, "accounts/profile.html", {"form": form})
+
+
+def profile_photo(request, filename):
+    storage = DatabaseProfilePhotoStorage()
+    try:
+        photo = storage.open(filename)
+    except FileNotFoundError:
+        legacy_storage = FileSystemStorage(location=settings.MEDIA_ROOT)
+        try:
+            legacy_photo = legacy_storage.open(filename)
+        except FileNotFoundError as exc:
+            raise Http404("Profile photo not found.") from exc
+        with legacy_photo:
+            storage.save(filename, legacy_photo)
+        photo = storage.open(filename)
+
+    response = FileResponse(
+        photo,
+        content_type=photo.content_type or mimetypes.guess_type(filename)[0] or "application/octet-stream",
+    )
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "public, max-age=3600"
+    return response

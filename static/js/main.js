@@ -25,9 +25,19 @@
 
   /* ---------- opening animation: skip, remember, never block ---------- */
   var intro = $("#intro");
+  var introFinished = !(intro && root.classList.contains("intro-on"));
+  var afterIntroCallbacks = [];
   function endIntro() {
+    if (introFinished) return;
+    introFinished = true;
     root.classList.remove("intro-on");
     store.sset("fz_intro_seen", "1");
+    afterIntroCallbacks.forEach(function (callback) { callback(); });
+    afterIntroCallbacks = [];
+  }
+  function afterIntro(callback) {
+    if (introFinished) callback();
+    else afterIntroCallbacks.push(callback);
   }
   if (intro && root.classList.contains("intro-on")) {
     var skip = $(".intro-skip", intro);
@@ -69,7 +79,7 @@
       });
       homeOrderNotification.addEventListener("close", markNotificationRead);
     }
-    homeOrderNotification.showModal();
+    afterIntro(function () { homeOrderNotification.showModal(); });
   }
 
   /* ---------- contact dialog ---------- */

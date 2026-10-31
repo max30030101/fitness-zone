@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.files.storage import FileSystemStorage
 from django.core.mail import get_connection
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -12,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from .models import EmailVerification
+from .models import EmailVerification, StoredProfilePhoto
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", SITE_URL="https://example.test")
@@ -103,6 +104,8 @@ class ProfilePhotoTests(TestCase):
         self.assertRedirects(response, reverse("accounts:profile"))
         self.user.profile.refresh_from_db()
         self.assertTrue(self.user.profile.photo.name.startswith("profile_photos/"))
+        stored_photo = StoredProfilePhoto.objects.get(name=self.user.profile.photo.name)
+        self.assertTrue(stored_photo.content.startswith(b"\x89PNG"))
 
         response = self.client.get(reverse("accounts:profile"))
         self.assertContains(response, self.user.profile.photo.url)
@@ -117,6 +120,44 @@ class ProfilePhotoTests(TestCase):
         self.assertNotContains(response, "JPG, PNG, or WebP")
         self.assertNotContains(response, "Currently:")
         self.assertNotContains(response, "Clear")
+
+    def test_profile_photo_url_serves_persisted_image_from_database(self):
+        response = self.client.post(reverse("accounts:profile"), {
+            "photo": self.make_photo(),
+            "phone": "",
+            "city": "",
+            "age": "",
+            "height_cm": "",
+            "weight_kg": "",
+            "goal": "general",
+            "experience": "beginner",
+            "equipment": "gym",
+            "days_per_week": "3",
+        })
+        self.assertRedirects(response, reverse("accounts:profile"))
+        self.user.profile.refresh_from_db()
+
+        response = self.client.get(self.user.profile.photo.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertTrue(b"".join(response.streaming_content).startswith(b"\x89PNG"))
+
+    def test_profile_photo_endpoint_imports_existing_local_file(self):
+        photo = self.make_photo()
+        photo_bytes = photo.read()
+        photo.seek(0)
+        name = "profile_photos/legacy.png"
+        with override_settings(MEDIA_ROOT=self.temp_media.name):
+            FileSystemStorage(location=self.temp_media.name).save(name, photo)
+
+            response = self.client.get(
+                reverse("accounts:profile_photo", kwargs={"filename": name})
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(b"".join(response.streaming_content), photo_bytes)
+        self.assertEqual(StoredProfilePhoto.objects.get(name=name).content, photo_bytes)
 
     def test_profile_photo_rejects_non_image_upload(self):
         response = self.client.post(reverse("accounts:profile"), {
