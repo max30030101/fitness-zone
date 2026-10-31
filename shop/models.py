@@ -194,6 +194,61 @@ class Order(models.Model):
         return f"Order #{self.pk} — {self.user}"
 
 
+class OrderStatusNotification(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="order_status_notifications",
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="status_notifications",
+    )
+    old_status = models.CharField(max_length=12, choices=Order.STATUS)
+    new_status = models.CharField(max_length=12, choices=Order.STATUS)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "read_at"])]
+
+    def __str__(self):
+        return f"Order #{self.order_id}: {self.old_status} to {self.new_status}"
+
+
+class AdminShopNotification(models.Model):
+    EVENT_TYPES = [
+        ("new_order", "New order"),
+        ("order_cancelled", "Order cancelled"),
+        ("product_out_of_stock", "Product out of stock"),
+    ]
+
+    event_type = models.CharField(max_length=24, choices=EVENT_TYPES)
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="admin_notifications",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="admin_notifications",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.get_event_type_display()
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)

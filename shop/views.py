@@ -10,13 +10,15 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from workouts.library import featured_workouts
 
 from .forms import CheckoutForm
-from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, Product, shipping_for
+from .invoices import build_invoice_pdf
+from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Product, shipping_for
 
 PER_PAGE = 12
 SORTS = [
@@ -257,11 +259,68 @@ def checkout(request):
 
 @login_required
 def order_success(request, order_id):
-    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items"),
+        pk=order_id,
+        user=request.user,
+    )
     return render(request, "shop/order_success.html", {"order": order})
+
+
+@login_required
+@require_POST
+def order_cancel(request, order_id):
+    with transaction.atomic():
+        order = get_object_or_404(
+            Order.objects.select_for_update(),
+            pk=order_id,
+            user=request.user,
+        )
+        if order.status not in {"pending", "confirmed"}:
+            messages.error(request, "Orders can only be cancelled before they ship.")
+            return redirect("shop:orders")
+
+        quantities = {}
+        for item in order.items.only("product_id", "quantity"):
+            if item.product_id:
+                quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
+
+        products = Product.objects.select_for_update().filter(
+            pk__in=quantities,
+        ).order_by("pk")
+        for product in products:
+            product.stock += quantities[product.pk]
+            product.save(update_fields=["stock"])
+
+        order.status = "cancelled"
+        order.save(update_fields=["status"])
+
+    messages.success(request, f"Order #{order.pk} has been cancelled.")
+    return redirect("shop:orders")
+
+
+@login_required
+def order_invoice(request, order_id):
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items"),
+        pk=order_id,
+        user=request.user,
+    )
+    return build_invoice_pdf(order)
 
 
 @login_required
 def order_list(request):
     orders = Order.objects.filter(user=request.user).prefetch_related("items")
-    return render(request, "shop/orders.html", {"orders": orders})
+    notifications = list(
+        OrderStatusNotification.objects.filter(user=request.user)
+        .select_related("order")[:20]
+    )
+    unread_ids = [notification.pk for notification in notifications if notification.read_at is None]
+    if unread_ids:
+        OrderStatusNotification.objects.filter(
+            user=request.user,
+            pk__in=unread_ids,
+            read_at__isnull=True,
+        ).update(read_at=timezone.now())
+    return render(request, "shop/orders.html", {"orders": orders, "order_notifications": notifications})

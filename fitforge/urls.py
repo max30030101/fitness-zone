@@ -5,6 +5,7 @@ from django.urls import include, path, re_path
 from django.views.static import serve
 import os
 
+from shop.admin import order_notifications
 from shop import views as shop_views
 
 admin.site.site_header = f"{settings.SITE_NAME} administration"
@@ -12,6 +13,7 @@ admin.site.site_title = f"{settings.SITE_NAME} admin"
 admin.site.index_title = "Store, catalogue and orders"
 
 urlpatterns = [
+    path("admin/order-notifications/", admin.site.admin_view(order_notifications), name="admin_order_notifications"),
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("workouts/", include("workouts.urls")),

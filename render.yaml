@@ -18,6 +18,24 @@ services:
         value: FITNESS ZONE
       - key: DJANGO_DEBUG
         value: "0"
+      - key: SERVE_MEDIA
+        value: "1"
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "1"
+      - key: EMAIL_USE_SSL
+        value: "0"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL

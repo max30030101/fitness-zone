@@ -39,12 +39,27 @@ class LoginForm(AuthenticationForm):
 
 
 class ProfileForm(forms.ModelForm):
+    MAX_PHOTO_SIZE = 5 * 1024 * 1024
+
     class Meta:
         model = Profile
-        fields = ["phone", "city", "age", "height_cm", "weight_kg", "goal", "experience", "equipment", "days_per_week"]
+        fields = ["photo", "phone", "city", "age", "height_cm", "weight_kg", "goal", "experience", "equipment", "days_per_week"]
         labels = {
+            "photo": "Profile photo",
             "height_cm": "Height (cm)",
             "weight_kg": "Weight (kg)",
             "experience": "Experience level",
             "days_per_week": "Workout days per week",
         }
+        help_texts = {
+            "photo": "JPG, PNG, or WebP. Maximum file size: 5 MB.",
+        }
+        widgets = {
+            "photo": forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+        }
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        if photo and photo.size > self.MAX_PHOTO_SIZE:
+            raise forms.ValidationError("Choose an image smaller than 5 MB.")
+        return photo

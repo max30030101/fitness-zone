@@ -1,0 +1,7 @@
+Hi {{ name }},
+
+{{ product.name }} is back in stock. You have {{ quantity }} in your cart.
+
+View the product: {{ product_url }}
+
+Thank you for shopping with {{ site_name }}.

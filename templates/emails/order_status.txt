@@ -1,0 +1,7 @@
+Hi {{ name }},
+
+The status of your order #{{ order.pk }} has changed from {{ old_status }} to {{ new_status }}.
+
+View your orders: {{ order_url }}
+
+Thank you for shopping with {{ site_name }}.

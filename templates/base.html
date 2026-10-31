@@ -11,7 +11,7 @@
       var d = document.documentElement; d.classList.add("js");
       try {
         var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (!reduce && !localStorage.getItem("fz_intro_seen")) d.classList.add("intro-on");
+        if (!reduce && !sessionStorage.getItem("fz_intro_seen")) d.classList.add("intro-on");
       } catch (e) {}
     })();
   </script>
@@ -37,6 +37,11 @@
       <a href="{% url 'workouts:library' %}"{% if '/workouts/library' in request.path %} aria-current="page"{% endif %}>Workouts</a>
       <a href="{% url 'workouts:recommend' %}"{% if '/workouts/recommend' in request.path %} aria-current="page"{% endif %}>AI Coach</a>
       <a href="{% url 'shop:list' %}"{% if '/shop' in request.path or '/product' in request.path %} aria-current="page"{% endif %}>Shop</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'shop:orders' %}" aria-label="Your orders{% if order_notification_count %}, {{ order_notification_count }} unread updates{% endif %}"{% if '/orders/' in request.path %} aria-current="page"{% endif %}>
+          Your orders{% if order_notification_count %} <span class="count">{{ order_notification_count }}</span>{% endif %}
+        </a>
+      {% endif %}
       <a href="{% url 'pages:mindset' %}"{% if '/mindset' in request.path %} aria-current="page"{% endif %}>Mindset</a>
       <a href="{% url 'pages:about' %}"{% if request.path == '/about/' %} aria-current="page"{% endif %}>About</a>
     </nav>
@@ -54,7 +59,10 @@
       <a class="icon-link" href="{% url 'shop:cart' %}">Cart{% if cart_count %} <span class="count" data-cart-count>{{ cart_count }}</span>{% endif %}</a>
       {% if user.is_authenticated %}
         <a class="icon-link" href="{% url 'workouts:dashboard' %}">Dashboard</a>
-        <a class="icon-link" href="{% url 'accounts:profile' %}">{{ user.first_name|default:user.username }}</a>
+        <a class="icon-link profile-link" href="{% url 'accounts:profile' %}">
+          {% if user.profile.photo %}<img class="profile-avatar" src="{{ user.profile.photo.url }}" alt="">{% endif %}
+          {{ user.first_name|default:user.username }}
+        </a>
         <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}<button type="submit" class="link-btn">Log out</button></form>
       {% else %}
         <a class="icon-link" href="{% url 'accounts:login' %}">Login</a>

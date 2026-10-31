@@ -27,7 +27,7 @@
   var intro = $("#intro");
   function endIntro() {
     root.classList.remove("intro-on");
-    store.set("fz_intro_seen", "1");
+    store.sset("fz_intro_seen", "1");
   }
   if (intro && root.classList.contains("intro-on")) {
     var skip = $(".intro-skip", intro);
@@ -35,6 +35,20 @@
     doc.addEventListener("keydown", function (e) { if (e.key === "Escape") endIntro(); });
     window.setTimeout(endIntro, 6200); // CSS hides it at ~6s even if this never runs
   }
+
+  /* ---------- order confirmation dialog ---------- */
+  var orderConfirmation = $("#order-confirmation");
+  if (orderConfirmation && typeof orderConfirmation.showModal === "function") {
+    orderConfirmation.showModal();
+  }
+
+  /* ---------- contact dialog ---------- */
+  $$("[data-open-dialog]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var dialog = $("#" + button.dataset.openDialog);
+      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+    });
+  });
 
   /* ---------- scroll reveal ---------- */
   var reveals = $$(".reveal");

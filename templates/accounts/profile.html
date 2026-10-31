@@ -4,8 +4,11 @@
 <section class="section"><div class="wrap narrow">
   <span class="eyebrow">Profile settings</span>
   <h1>Your profile</h1>
+  {% if user.profile.photo %}
+    <img class="profile-photo" src="{{ user.profile.photo.url }}" alt="Profile photo for {{ user.get_full_name|default:user.username }}">
+  {% endif %}
   <p class="muted">{{ user.get_full_name|default:user.username }} ({{ user.email }}){% if user.profile.bmi %}. Current BMI: {{ user.profile.bmi }}{% endif %}</p>
-  <form method="post" class="form">
+  <form method="post" class="form" enctype="multipart/form-data">
     {% csrf_token %}
     {% include "partials/_form_fields.html" %}
     <button type="submit" class="btn">Save profile</button>

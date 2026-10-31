@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 
 from .choices import EQUIPMENT, GOALS, LEVELS
@@ -7,6 +7,11 @@ from .choices import EQUIPMENT, GOALS, LEVELS
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    photo = models.ImageField(
+        upload_to="profile_photos/",
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],
+    )
     phone = models.CharField(max_length=15, blank=True)
     city = models.CharField(max_length=80, blank=True)
     age = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(13), MaxValueValidator(100)])

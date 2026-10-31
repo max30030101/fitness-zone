@@ -2,15 +2,52 @@
 {% block title %}Your orders{% endblock %}
 {% block content %}
 <section class="section"><div class="wrap narrow">
-  <h1>Your orders</h1>
+  <div class="section-head">
+    <h1>Your orders</h1>
+    <button class="btn btn-ghost" type="button" data-open-dialog="contact-help">Help</button>
+  </div>
+  {% if order_notifications %}
+    <section class="order-updates" aria-labelledby="order-updates-title">
+      <h2 id="order-updates-title">Order updates</h2>
+      <ul class="plain">
+        {% for notification in order_notifications %}
+          <li{% if not notification.read_at %} class="order-update-new"{% endif %}>
+            Order #{{ notification.order_id }} changed from {{ notification.get_old_status_display }} to
+            <strong>{{ notification.get_new_status_display }}</strong>
+            <span class="muted small">{{ notification.created_at|date:"j M, g:i a" }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
   {% for order in orders %}
     <article class="order">
       <header><h2>Order #{{ order.pk }}</h2><span class="status status-{{ order.status }}">{{ order.get_status_display }}</span></header>
       <p class="muted">Placed {{ order.created_at|date:"j M Y" }}. Total ₹{{ order.total|floatformat:"-2g" }}</p>
       <ul class="mini">{% for item in order.items.all %}<li><span>{{ item.quantity }} × {{ item.product_name }}</span><span>₹{{ item.line_total|floatformat:"-2g" }}</span></li>{% endfor %}</ul>
+      <a class="btn btn-small" href="{% url 'shop:order_invoice' order.id %}">Download invoice (PDF)</a>
+      {% if order.status == "pending" or order.status == "confirmed" %}
+        <form method="post" action="{% url 'shop:order_cancel' order.id %}" style="display:inline">
+          {% csrf_token %}
+          <button class="btn btn-small btn-ghost" type="submit">Cancel order</button>
+        </form>
+      {% endif %}
     </article>
   {% empty %}
     <div class="empty"><h2>No orders yet</h2><p>Your orders will show up here with their delivery status.</p><a class="btn" href="{% url 'shop:list' %}">Shop gear</a></div>
   {% endfor %}
 </div></section>
+<dialog id="contact-help" class="contact-dialog" aria-labelledby="contact-help-title">
+  <div class="contact-dialog-card">
+    <span class="eyebrow">Order support</span>
+    <h2 id="contact-help-title">Contact us</h2>
+    {% if support_email %}
+      <p>Need help with an order? Email us and include your order number.</p>
+      <a class="btn" href="mailto:{{ support_email }}">{{ support_email }}</a>
+    {% else %}
+      <p>Our support email is not configured yet. Please try again later.</p>
+    {% endif %}
+    <form method="dialog"><button class="link-btn" type="submit">Close</button></form>
+  </div>
+</dialog>
 {% endblock %}

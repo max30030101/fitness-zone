@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script
+    src="{% static 'js/admin_order_notifications.js' %}"
+    data-endpoint="{% url 'admin_order_notifications' %}"
+    data-since="{% now 'c' %}"
+    defer
+  ></script>
+{% endblock %}
