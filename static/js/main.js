@@ -40,8 +40,17 @@
     else afterIntroCallbacks.push(callback);
   }
   if (intro && root.classList.contains("intro-on")) {
-    var skip = $(".intro-skip", intro);
-    if (skip) skip.addEventListener("click", endIntro);
+    var lastTapTime = 0;
+    var handleDoubleTap = function (event) {
+      if (!intro || !event) return;
+      if (event.target && event.target.closest && !event.target.closest("#intro")) return;
+      var now = Date.now();
+      if (now - lastTapTime < 320) {
+        endIntro();
+      }
+      lastTapTime = now;
+    };
+    intro.addEventListener("pointerdown", handleDoubleTap);
     doc.addEventListener("keydown", function (e) { if (e.key === "Escape") endIntro(); });
     window.setTimeout(endIntro, 6200); // CSS hides it at ~6s even if this never runs
   }

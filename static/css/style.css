@@ -184,8 +184,6 @@ option { background: #151b17; color: var(--text); }
 .intro-logo span { color: var(--lime); margin-left: .25em; }
 .intro-tag { font: 600 .78rem var(--body); letter-spacing: .22em; color: var(--text-2); text-transform: uppercase; margin: 0 auto; animation: fadeUp .8s 1.6s var(--ease) both; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
-.intro-skip { position: absolute; right: 1.2rem; bottom: 1.2rem; background: transparent; color: var(--text); border: 1px solid var(--line); padding: .5rem 1.1rem; border-radius: 999px; cursor: pointer; font: 600 .85rem var(--body); }
-.intro-skip:hover { border-color: var(--lime); color: var(--lime); }
 
 /* athlete figure */
 .athlete { color: #1b241e; }

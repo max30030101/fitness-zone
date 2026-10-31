@@ -2,13 +2,24 @@ from datetime import timedelta
 
 from django.contrib import admin
 from django.http import Http404, JsonResponse
+from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.html import format_html
 
 from .invoices import build_invoice_pdf
-from .models import AdminShopNotification, Cart, CartItem, Category, Favourite, Order, OrderItem, Product
+from .models import (
+    AdminShopNotification,
+    Cart,
+    CartItem,
+    Category,
+    Favourite,
+    Order,
+    OrderItem,
+    Product,
+    ProductStock,
+)
 
 
 def order_notifications(request):
@@ -91,6 +102,35 @@ class ProductAdmin(admin.ModelAdmin):
     @admin.action(description="Hide selected from the shop")
     def deactivate(self, request, queryset):
         queryset.update(is_active=False)
+
+
+@admin.register(ProductStock)
+class ProductStockAdmin(admin.ModelAdmin):
+    list_display = ("name", "category", "price", "discount_price", "stock")
+    list_display_links = None
+    list_editable = ("price", "discount_price", "stock")
+    list_filter = ("category",)
+    search_fields = ("name", "brand")
+    list_per_page = 1000
+    list_max_show_all = 1000
+
+    def has_module_permission(self, request):
+        return request.user.has_perm("shop.view_product") or request.user.has_perm("shop.change_product")
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.has_perm("shop.view_product") or request.user.has_perm("shop.change_product")
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.has_perm("shop.change_product")
+
+    def has_add_permission(self, request):
+        return request.user.has_perm("shop.add_product")
+
+    def add_view(self, request, form_url="", extra_context=None):
+        return redirect("admin:shop_product_add")
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class OrderItemInline(admin.TabularInline):

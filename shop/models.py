@@ -130,6 +130,13 @@ class Product(models.Model):
         return 0 < self.stock <= 5
 
 
+class ProductStock(Product):
+    class Meta:
+        proxy = True
+        verbose_name = "Stock"
+        verbose_name_plural = "Stock"
+
+
 class Favourite(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favourites")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="favourited_by")

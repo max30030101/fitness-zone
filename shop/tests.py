@@ -26,6 +26,73 @@ from .models import (
 )
 
 
+class ProductStockAdminTests(TestCase):
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username="stock-admin",
+            email="stock-admin@example.test",
+            password="admin-password",
+        )
+        self.category = Category.objects.create(name="Stock admin category")
+        self.products = [
+            Product.objects.create(
+                category=self.category,
+                name=f"Stock item {index}",
+                price="10.00",
+                stock=index,
+            )
+            for index in (1, 2)
+        ]
+        self.client.force_login(self.admin_user)
+
+    def test_stock_page_is_available_from_shop_admin(self):
+        response = self.client.get(reverse("admin:index"))
+
+        self.assertContains(response, reverse("admin:shop_productstock_changelist"))
+        self.assertContains(response, "Stock")
+        self.assertContains(response, reverse("admin:shop_productstock_add"))
+
+    def test_stock_add_button_opens_product_creation_form(self):
+        response = self.client.get(reverse("admin:shop_productstock_add"))
+
+        self.assertRedirects(response, reverse("admin:shop_product_add"))
+
+    def test_admin_can_update_stock_for_multiple_products_on_stock_page(self):
+        stock_url = reverse("admin:shop_productstock_changelist")
+        response = self.client.get(stock_url)
+        self.assertEqual(response.status_code, 200)
+
+        products = list(response.context["cl"].result_list)
+        self.assertEqual({product.pk for product in products}, {product.pk for product in self.products})
+        data = {
+            "form-TOTAL_FORMS": str(len(products)),
+            "form-INITIAL_FORMS": str(len(products)),
+            "form-MIN_NUM_FORMS": "0",
+            "form-MAX_NUM_FORMS": "1000",
+            "_save": "Save",
+        }
+        expected_stock = {}
+        expected_prices = {}
+        expected_discount_prices = {}
+        for index, product in enumerate(products):
+            expected_stock[product.pk] = 10 + index
+            expected_prices[product.pk] = f"{20 + index}.00"
+            expected_discount_prices[product.pk] = f"{18 + index}.00"
+            data[f"form-{index}-id"] = str(product.pk)
+            data[f"form-{index}-stock"] = str(expected_stock[product.pk])
+            data[f"form-{index}-price"] = expected_prices[product.pk]
+            data[f"form-{index}-discount_price"] = expected_discount_prices[product.pk]
+
+        response = self.client.post(stock_url, data)
+
+        self.assertRedirects(response, stock_url)
+        for product in self.products:
+            product.refresh_from_db()
+            self.assertEqual(product.stock, expected_stock[product.pk])
+            self.assertEqual(str(product.price), expected_prices[product.pk])
+            self.assertEqual(str(product.discount_price), expected_discount_prices[product.pk])
+
+
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     SITE_NAME="Fitness Zone",
