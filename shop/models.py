@@ -1,3 +1,5 @@
+
+import uuid
 from decimal import Decimal
 
 from django.conf import settings
@@ -13,9 +15,11 @@ def unique_slug(instance, source, field="slug"):
     base = slugify(source) or "item"
     slug, n = base, 2
     Model = instance.__class__
+
     while Model.objects.filter(**{field: slug}).exclude(pk=instance.pk).exists():
         slug = f"{base}-{n}"
         n += 1
+
     return slug
 
 
@@ -35,7 +39,10 @@ class Category(models.Model):
     slug = models.SlugField(max_length=120, unique=True, blank=True)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="categories/", blank=True)
-    position = models.PositiveSmallIntegerField(default=0, help_text="Lower numbers appear first.")
+    position = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Lower numbers appear first."
+    )
 
     class Meta:
         ordering = ["position", "name"]
@@ -71,24 +78,47 @@ class StoredProductImage(models.Model):
 
 
 class Product(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="products"
+    )
     name = models.CharField(max_length=160)
     slug = models.SlugField(max_length=180, unique=True, blank=True)
     brand = models.CharField(max_length=80, blank=True)
     short_description = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
-    price = models.DecimalField("MRP (₹)", max_digits=10, decimal_places=2)
-    discount_price = models.DecimalField("Sale price (₹)", max_digits=10, decimal_places=2, null=True, blank=True)
+
+    price = models.DecimalField(
+        "MRP (₹)",
+        max_digits=10,
+        decimal_places=2
+    )
+
+    discount_price = models.DecimalField(
+        "Sale price (₹)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
     stock = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="products/", blank=True, storage=DatabaseProductImageStorage())
     is_featured = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True, help_text="Untick to hide from the shop.")
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Untick to hide from the shop."
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["is_active", "category"])]
+        indexes = [
+            models.Index(fields=["is_active", "category"])
+        ]
 
     def __str__(self):
         return self.name
@@ -117,8 +147,10 @@ class Product(models.Model):
 
     @property
     def discount_percent(self):
-        if self.on_sale:
-            return int(round((self.price - self.current_price) / self.price * 100))
+        if self.on_sale and self.price:
+            return int(round(
+                (self.price - self.current_price) / self.price * 100
+            ))
         return 0
 
     @property
@@ -138,8 +170,16 @@ class ProductStock(Product):
 
 
 class Favourite(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favourites")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="favourited_by")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="favourites"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="favourited_by"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -151,7 +191,11 @@ class Favourite(models.Model):
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cart")
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="cart"
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -159,11 +203,18 @@ class Cart(models.Model):
 
     @property
     def subtotal(self):
-        return sum((i.line_total for i in self.items.select_related("product")), Decimal("0"))
+        return sum(
+            (i.line_total for i in self.items.select_related("product")),
+            Decimal("0")
+        )
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    cart = models.ForeignKey(
+        Cart,
+        on_delete=models.CASCADE,
+        related_name="items"
+    )
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
@@ -217,27 +268,98 @@ class Order(models.Model):
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
     ]
-    PAYMENT = [("cod", "Cash on delivery")]  # online payments are a planned enhancement
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="orders")
+    PAYMENT = [
+        ("cod", "Cash on Delivery"),
+        ("demo_upi", "Demo UPI"),
+        ("demo_card", "Demo Card"),
+        ("demo_netbanking", "Demo Net Banking"),
+    ]
+
+    PAYMENT_STATUS = [
+        ("cod_due", "Cash on Delivery Due"),
+        ("unpaid", "Unpaid"),
+        ("pending", "Payment Pending"),
+        ("success", "Payment Successful"),
+        ("failed", "Payment Failed"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="orders"
+    )
+
     full_name = models.CharField(max_length=120)
-    phone = models.CharField(max_length=15, validators=[RegexValidator(r"^[0-9+\- ]{10,15}$", "Enter a valid phone number.")])
+
+    phone = models.CharField(
+        max_length=15,
+        validators=[
+            RegexValidator(
+                r"^[0-9+\- ]{10,15}$",
+                "Enter a valid phone number."
+            )
+        ]
+    )
+
     address_line = models.CharField("Address", max_length=255)
     city = models.CharField(max_length=80)
     state = models.CharField(max_length=80)
-    pincode = models.CharField(max_length=6, validators=[RegexValidator(r"^[1-9][0-9]{5}$", "Enter a valid 6-digit PIN code.")])
-    payment_method = models.CharField(max_length=10, choices=PAYMENT, default="cod")
-    status = models.CharField(max_length=12, choices=STATUS, default="pending")
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    shipping = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    pincode = models.CharField(
+        max_length=6,
+        validators=[
+            RegexValidator(
+                r"^[1-9][0-9]{5}$",
+                "Enter a valid 6-digit PIN code."
+            )
+        ]
+    )
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT,
+        default="cod"
+    )
+
+    payment_status = models.CharField(
+        max_length=12,
+        choices=PAYMENT_STATUS,
+        default="cod_due"
+    )
+
+    status = models.CharField(
+        max_length=12,
+        choices=STATUS,
+        default="pending"
+    )
+
+    stock_reserved = models.BooleanField(default=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    subtotal = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    shipping = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+    total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Order #{self.pk} — {self.user}"
+        return f"Order #{self.pk} - {self.user}"
 
 
 class OrderStatusNotification(models.Model):
@@ -296,8 +418,17 @@ class AdminShopNotification(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="items"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     product_name = models.CharField(max_length=160)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField()
@@ -308,3 +439,57 @@ class OrderItem(models.Model):
     @property
     def line_total(self):
         return self.unit_price * self.quantity
+
+
+class Payment(models.Model):
+    STATUS = [
+        ("pending", "Pending"),
+        ("success", "Successful"),
+        ("failed", "Failed"),
+    ]
+
+    METHODS = [
+        ("demo_upi", "Demo UPI"),
+        ("demo_card", "Demo Card"),
+        ("demo_netbanking", "Demo Net Banking"),
+    ]
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="payments"
+    )
+
+    transaction_id = models.CharField(
+        max_length=40,
+        unique=True,
+        editable=False
+    )
+
+    method = models.CharField(max_length=20, choices=METHODS)
+
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    status = models.CharField(
+        max_length=12,
+        choices=STATUS,
+        default="pending"
+    )
+
+    is_demo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.transaction_id:
+            self.transaction_id = (
+                f"FZ-DEMO-{uuid.uuid4().hex[:16].upper()}"
+            )
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.transaction_id} - Order #{self.order_id}"
+

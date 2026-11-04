@@ -1,27 +1,153 @@
+
 {% extends "base.html" %}
-{% block title %}Order placed{% endblock %}
+{% block title %}Order Confirmation | FITNESS ZONE{% endblock %}
+
 {% block content %}
-<section class="section"><div class="wrap narrow">
-  <h1>Order #{{ order.pk }} is placed</h1>
-  <p>Thanks, {{ order.full_name }}. We'll deliver to {{ order.address_line }}, {{ order.city }}, {{ order.state }} {{ order.pincode }}. Pay ₹{{ order.total|floatformat:"-2g" }} in cash on delivery.</p>
-  <ul class="mini">{% for item in order.items.all %}<li><span>{{ item.quantity }} × {{ item.product_name }}</span><span>₹{{ item.line_total|floatformat:"-2g" }}</span></li>{% endfor %}</ul>
-  <p><a class="btn" href="{% url 'shop:order_invoice' order.id %}">Download invoice (PDF)</a> <a class="btn btn-ghost" href="{% url 'shop:orders' %}">View my orders</a> <a class="btn btn-ghost" href="{% url 'shop:list' %}">Keep shopping</a></p>
-</div></section>
-<dialog id="order-confirmation" class="order-confirmation" aria-labelledby="order-confirmation-title">
-  <form method="dialog" class="dialog-close-form">
-    <button class="dialog-close" type="submit" aria-label="Close order confirmation">&times;</button>
-  </form>
-  <div class="order-confirmation-card">
-    <svg class="order-confirmation-icon" viewBox="0 0 48 48" aria-hidden="true">
-      <circle cx="24" cy="24" r="21"/>
-      <path d="m14 24 7 7 14-15"/>
-    </svg>
-    <span class="eyebrow">Order confirmed</span>
-    <h2 id="order-confirmation-title">Thanks for your order!</h2>
-    <p>Order #{{ order.pk }} is placed for ₹{{ order.total|floatformat:"-2g" }}. Your payment is due on delivery.</p>
-    <div class="order-confirmation-actions">
-      <a class="btn" href="{% url 'shop:orders' %}" autofocus>View order</a>
+<section class="section">
+  <div class="wrap narrow">
+
+    <div class="fz-confirm-card">
+
+      {% if order.payment_status == "success" %}
+        <div class="fz-confirm-icon">✓</div>
+        <p class="fz-confirm-label">PAYMENT SUCCESSFUL</p>
+        <h1>Your Order Is Confirmed<span>.</span></h1>
+        <p class="muted">Your demo payment was completed successfully.</p>
+
+      {% elif order.payment_method == "cod" %}
+        <div class="fz-confirm-icon">✓</div>
+        <p class="fz-confirm-label">ORDER PLACED</p>
+        <h1>You're Almost There<span>.</span></h1>
+        <p class="muted">Your order has been placed. Pay when it arrives.</p>
+
+      {% else %}
+        <div class="fz-confirm-icon fz-pending-icon">!</div>
+        <p class="fz-confirm-label">PAYMENT NOT COMPLETED</p>
+        <h1>Complete Your Payment<span>.</span></h1>
+        <p class="muted">Your order is not confirmed yet. Please complete or retry your demo payment.</p>
+        <a class="btn" href="{% url 'shop:demo_payment' order.pk %}">Continue Payment</a>
+      {% endif %}
+
+      <div class="fz-confirm-divider"></div>
+
+      <div class="fz-confirm-details">
+        <div><span>Order ID</span><strong>#{{ order.pk }}</strong></div>
+        <div><span>Order Amount</span><strong>₹{{ order.total|floatformat:"2g" }}</strong></div>
+        <div><span>Payment Method</span><strong>{{ order.get_payment_method_display }}</strong></div>
+        <div><span>Payment Status</span><strong>{{ order.get_payment_status_display }}</strong></div>
+      </div>
+
+      <div class="fz-confirm-divider"></div>
+
+      <h2>Delivery Address</h2>
+      <p>
+        {{ order.full_name }}<br>
+        {{ order.address_line }}<br>
+        {{ order.city }}, {{ order.state }} - {{ order.pincode }}<br>
+        Phone: {{ order.phone }}
+      </p>
+
+      <div class="fz-confirm-divider"></div>
+
+      <h2>Order Items</h2>
+      <ul class="mini">
+        {% for item in order.items.all %}
+        <li>
+          <span>{{ item.quantity }} × {{ item.product_name }}</span>
+          <span>₹{{ item.line_total|floatformat:"2g" }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <div class="fz-confirm-actions">
+        <a class="btn" href="{% url 'shop:order_invoice' order.id %}">Download invoice (PDF)</a>
+        <a class="btn" href="{% url 'shop:orders' %}">View My Orders</a>
+        <a class="btn btn-ghost" href="{% url 'shop:list' %}">Continue Shopping</a>
+      </div>
+
     </div>
   </div>
+</section>
+
+
+{% if order.payment_method == "cod" %}
+<dialog id="order-confirmation" class="order-confirmation" aria-labelledby="order-confirmation-title">
+  <form method="dialog">
+    <button type="submit" aria-label="Close order confirmation">&times;</button>
+  </form>
+  <div class="order-confirmation-card">
+    <h2 id="order-confirmation-title">Thanks for your order!</h2>
+    <p>Your order has been placed successfully.</p>
+    <a class="btn" href="{% url 'shop:orders' %}">View order</a>
+  </div>
 </dialog>
+{% endif %}
+
+<style>
+.fz-confirm-card {
+  padding:clamp(20px,5vw,36px);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  background:rgba(255,255,255,.025);
+}
+.fz-confirm-icon {
+  width:58px;
+  height:58px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(181,245,66,.12);
+  color:#b5f542;
+  font-size:30px;
+  font-weight:900;
+  margin-bottom:20px;
+}
+.fz-pending-icon {
+  background:rgba(255,190,80,.12);
+  color:#ffc66d;
+}
+.fz-confirm-label {
+  color:#b5f542;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:2px;
+}
+.fz-confirm-card h1 {
+  font-size:clamp(27px,5vw,40px);
+  margin:10px 0;
+}
+.fz-confirm-card h1 span { color:#b5f542; }
+.fz-confirm-card h2 {
+  font-size:17px;
+  margin-bottom:12px;
+}
+.fz-confirm-divider {
+  height:1px;
+  background:rgba(255,255,255,.12);
+  margin:23px 0;
+}
+.fz-confirm-details {
+  display:grid;
+  gap:13px;
+}
+.fz-confirm-details div {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  font-size:14px;
+}
+.fz-confirm-details span { color:#aaa; }
+.fz-confirm-details strong { text-align:right; }
+.fz-confirm-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:25px;
+}
+@media(max-width:480px) {
+  .fz-confirm-actions { flex-direction:column; }
+  .fz-confirm-actions .btn { text-align:center; }
+}
+</style>
 {% endblock %}
+

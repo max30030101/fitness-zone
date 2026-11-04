@@ -1,55 +1,209 @@
+
+
 {% extends "base.html" %}
-{% block title %}Checkout{% endblock %}
+{% block title %}Secure Checkout | FITNESS ZONE{% endblock %}
+
 {% block content %}
-<section class="section"><div class="wrap">
-  <h1>Checkout</h1>
-  <div class="cart-layout">
-    <form method="post" class="form" data-loading="Placing order…" data-checkout-address-form>
-      {% csrf_token %}
-      <h2>Delivery address</h2>
-      <div class="field{% if form.saved_address.errors %} has-error{% endif %}">
-        <label for="{{ form.saved_address.id_for_label }}">{{ form.saved_address.label }}</label>
-        <select id="{{ form.saved_address.id_for_label }}" name="{{ form.saved_address.html_name }}" data-saved-address-select>
-          <option value="">Enter a new address</option>
-          {% for address in saved_addresses %}
-            <option value="{{ address.pk }}"
-              data-full-name="{{ address.full_name }}"
-              data-phone="{{ address.phone }}"
-              data-address-line="{{ address.address_line }}"
-              data-city="{{ address.city }}"
-              data-state="{{ address.state }}"
-              data-pincode="{{ address.pincode }}"
-              {% if selected_address_id|stringformat:"s" == address.pk|stringformat:"s" %}selected{% endif %}>
-              {{ address.label }} — {{ address.address_line }}, {{ address.city }}
-            </option>
-          {% endfor %}
-        </select>
-        {% for error in form.saved_address.errors %}<p class="error">{{ error }}</p>{% endfor %}
-        <p class="help"><a href="{% url 'shop:addresses' %}">Manage saved addresses</a></p>
-      </div>
-      {% for field in form %}
-        {% if field.name != "saved_address" %}
-          <div class="field{% if field.errors %} has-error{% endif %}"{% if field.name == "address_label" %} data-address-label-field{% endif %}>
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
-            {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
-          </div>
+<section class="section">
+  <div class="wrap">
+    <div style="margin-bottom:28px;">
+      <p style="color:#b5f542;font-weight:700;letter-spacing:3px;font-size:12px;">FITNESS ZONE / CHECKOUT</p>
+      <h1 style="font-size:clamp(30px,5vw,46px);margin:8px 0;">Complete Your Order<span style="color:#b5f542;">.</span></h1>
+      <p class="muted">One final step towards your stronger self.</p>
+    </div>
+
+    <div class="cart-layout">
+      <form method="post" class="form" data-loading="Placing your order..." data-checkout-address-form>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="notice" role="alert">{{ form.non_field_errors }}</div>
         {% endif %}
-      {% endfor %}
-      <h2>Payment</h2>
-      <p>Cash on delivery. Pay when your order arrives. Online payments are coming soon.</p>
-      <button type="submit" class="btn btn-large">Place order, ₹{{ total|floatformat:"-2g" }}</button>
-    </form>
-    <aside class="summary">
-      <h2>In your order</h2>
-      <ul class="mini">{% for item in items %}<li><span>{{ item.quantity }} × {{ item.product.name }}</span><span>₹{{ item.line_total|floatformat:"-2g" }}</span></li>{% endfor %}</ul>
-      <dl>
-        <div><dt>Subtotal</dt><dd>₹{{ subtotal|floatformat:"-2g" }}</dd></div>
-        <div><dt>Delivery</dt><dd>{% if shipping %}₹{{ shipping|floatformat:"-2g" }}{% else %}Free{% endif %}</dd></div>
-        <div class="total"><dt>Total</dt><dd>₹{{ total|floatformat:"-2g" }}</dd></div>
-      </dl>
-    </aside>
+
+        <div style="margin-bottom:28px;">
+          <h2>01. Delivery Details</h2>
+
+          <div class="field{% if form.saved_address.errors %} has-error{% endif %}">
+            <label for="{{ form.saved_address.id_for_label }}">{{ form.saved_address.label }}</label>
+            <select id="{{ form.saved_address.id_for_label }}" name="{{ form.saved_address.html_name }}" data-saved-address-select>
+              <option value="">Enter a new address</option>
+              {% for address in saved_addresses %}
+                <option value="{{ address.pk }}"
+                  data-full-name="{{ address.full_name }}"
+                  data-phone="{{ address.phone }}"
+                  data-address-line="{{ address.address_line }}"
+                  data-city="{{ address.city }}"
+                  data-state="{{ address.state }}"
+                  data-pincode="{{ address.pincode }}"
+                  {% if selected_address_id|stringformat:"s" == address.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ address.label }} — {{ address.address_line }}, {{ address.city }}
+                </option>
+              {% endfor %}
+            </select>
+            {% for error in form.saved_address.errors %}<p class="error">{{ error }}</p>{% endfor %}
+            <p class="help"><a href="{% url 'shop:addresses' %}">Manage saved addresses</a></p>
+          </div>
+          {% for field in form %}
+            {% if field.name != "payment_method" and field.name != "saved_address" %}
+              <div class="field{% if field.errors %} has-error{% endif %}"{% if field.name == "address_label" %} data-address-label-field{% endif %}>
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <div class="help">{{ field.help_text|safe }}</div>
+                {% endif %}
+                {% for error in field.errors %}
+                  <p class="error">{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <div style="margin-bottom:24px;">
+          <h2>02. Select Payment Method</h2>
+          <p class="muted">Choose how you want to complete your order.</p>
+
+          <div style="display:grid;gap:12px;margin-top:18px;">
+
+            <label class="fz-payment-option">
+              <input type="radio" name="payment_method" value="cod" checked>
+              <span>
+                <strong>Cash on Delivery</strong>
+                <small>Pay when your order arrives.</small>
+              </span>
+              <span class="fz-payment-tag">COD</span>
+            </label>
+
+            <label class="fz-payment-option">
+              <input type="radio" name="payment_method" value="demo_upi">
+              <span>
+                <strong>UPI Payment</strong>
+                <small>Simulated UPI payment for college demo.</small>
+              </span>
+              <span class="fz-payment-tag">UPI</span>
+            </label>
+
+            <label class="fz-payment-option">
+              <input type="radio" name="payment_method" value="demo_card">
+              <span>
+                <strong>Credit / Debit Card</strong>
+                <small>Demo card payment. No real card required.</small>
+              </span>
+              <span class="fz-payment-tag">CARD</span>
+            </label>
+
+            <label class="fz-payment-option">
+              <input type="radio" name="payment_method" value="demo_netbanking">
+              <span>
+                <strong>Net Banking</strong>
+                <small>Simulated internet banking payment.</small>
+              </span>
+              <span class="fz-payment-tag">BANK</span>
+            </label>
+
+          </div>
+
+          <div style="margin-top:18px;padding:15px;border:1px solid rgba(181,245,66,.3);border-radius:12px;background:rgba(181,245,66,.06);">
+            <strong style="color:#b5f542;">DEMO PAYMENT MODE</strong>
+            <p style="margin:5px 0 0;font-size:13px;" class="muted">
+              No real money will be transferred. This payment system is created only for demonstration purposes.
+            </p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-large" style="width:100%;">
+          Place Order &middot; &#8377;{{ total|floatformat:"2g" }}
+        </button>
+
+        <p class="muted" style="font-size:12px;margin-top:12px;text-align:center;">
+          Your order amount is calculated securely by FITNESS ZONE.
+        </p>
+      </form>
+
+      <aside class="summary">
+        <h2>Order Summary</h2>
+
+        <ul class="mini">
+          {% for item in items %}
+          <li>
+            <span>{{ item.quantity }} &times; {{ item.product.name }}</span>
+            <span>&#8377;{{ item.line_total|floatformat:"2g" }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <dl>
+          <div>
+            <dt>Subtotal</dt>
+            <dd>&#8377;{{ subtotal|floatformat:"2g" }}</dd>
+          </div>
+          <div>
+            <dt>Delivery</dt>
+            <dd>{% if shipping %}&#8377;{{ shipping|floatformat:"2g" }}{% else %}Free{% endif %}</dd>
+          </div>
+          <div class="total">
+            <dt>Total</dt>
+            <dd>&#8377;{{ total|floatformat:"2g" }}</dd>
+          </div>
+        </dl>
+
+        <p class="muted" style="font-size:12px;margin-top:18px;">
+          FITNESS ZONE &mdash; TRAIN SMARTER. BECOME STRONGER.
+        </p>
+      </aside>
+    </div>
   </div>
-</div></section>
+</section>
+
+<style>
+.fz-payment-option {
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:17px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  cursor:pointer;
+  transition:border-color .2s, background .2s;
+}
+.fz-payment-option:hover {
+  border-color:#b5f542;
+  background:rgba(181,245,66,.06);
+}
+.fz-payment-option:has(input:checked) {
+  border-color:#b5f542;
+  background:rgba(181,245,66,.09);
+}
+.fz-payment-option input {
+  accent-color:#b5f542;
+  width:18px;
+  height:18px;
+  flex-shrink:0;
+}
+.fz-payment-option span:nth-child(2) {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  flex:1;
+}
+.fz-payment-option strong {
+  color:inherit;
+  font-size:15px;
+}
+.fz-payment-option small {
+  color:#a5a5a5;
+  font-size:12px;
+}
+.fz-payment-tag {
+  color:#b5f542;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+@media(max-width:600px) {
+  .fz-payment-option {padding:13px;}
+}
+</style>
 {% endblock %}
+

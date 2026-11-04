@@ -17,12 +17,14 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_GET, require_POST
 
+from accounts.models import Profile
+
 from workouts.library import featured_workouts
 
 from .emails import send_order_placed_email
 from .forms import CheckoutForm, SavedAddressForm
 from .invoices import build_invoice_pdf
-from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Product, SavedAddress, shipping_for
+from .models import Cart, CartItem, Category, Favourite, Order, OrderItem, OrderStatusNotification, Payment, Product, SavedAddress, shipping_for
 from .storage import DatabaseProductImageStorage
 
 PER_PAGE = 12
@@ -273,6 +275,8 @@ def checkout(request):
                     order = form.save(commit=False)
                     order.user = request.user
                     order.subtotal, order.shipping, order.total = subtotal, shipping, subtotal + shipping
+                    order.payment_status = 'cod_due' if order.payment_method == 'cod' else 'unpaid'
+                    order.stock_reserved = True
                     order.save()
                     if form.cleaned_data["save_address"]:
                         saved_address = form.cleaned_data["saved_address"]
@@ -298,12 +302,15 @@ def checkout(request):
             except ValueError as exc:
                 messages.error(request, str(exc))
                 return redirect("shop:cart")
-            return redirect("shop:order_success", order_id=order.pk)
+            if order.payment_method == "cod":
+                return redirect("shop:order_success", order_id=order.pk)
+            return redirect("shop:demo_payment", order_id=order.pk)
     else:
         u = request.user
+        profile, _ = Profile.objects.get_or_create(user=u)
         form = CheckoutForm(
             user=u,
-            initial={"full_name": u.get_full_name(), "phone": u.profile.phone, "city": u.profile.city},
+            initial={"full_name": u.get_full_name(), "phone": profile.phone, "city": profile.city},
         )
     return render(request, "shop/checkout.html", {
         "form": form,
@@ -334,6 +341,50 @@ def address_book(request, address_id=None):
 
 
 @login_required
+def demo_payment(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    if order.payment_method not in {"demo_upi", "demo_card", "demo_netbanking"}:
+        return redirect("shop:order_success", order_id=order.pk)
+    if order.status == "cancelled":
+        messages.error(request, "This order has been cancelled.")
+        return redirect("shop:orders")
+    if order.payment_status == "success":
+        return redirect("shop:order_success", order_id=order.pk)
+    if request.method == "POST":
+        result = request.POST.get("payment_result", "").lower()
+        if result not in {"success", "failed", "pending"}:
+            messages.error(request, "Please select a valid demo payment result.")
+        else:
+            with transaction.atomic():
+                order = get_object_or_404(
+                    Order.objects.select_for_update(),
+                    pk=order_id,
+                    user=request.user,
+                )
+                if order.payment_status != "success":
+                    Payment.objects.create(
+                        order=order,
+                        method=order.payment_method,
+                        amount=order.total,
+                        status=result,
+                        is_demo=True,
+                    )
+                    order.payment_status = result
+                    update_fields = ["payment_status"]
+                    if result == "success":
+                        order.paid_at = timezone.now()
+                        order.status = "confirmed"
+                        update_fields.extend(["paid_at", "status"])
+                    order.save(update_fields=update_fields)
+            if order.payment_status == "success":
+                messages.success(request, "Demo payment successful!")
+                return redirect("shop:order_success", order_id=order.pk)
+            messages.warning(request, f"Demo payment result: {order.payment_status}. You can try again.")
+    return render(request, "shop/demo_payment.html", {
+        "order": order,
+        "payments": order.payments.order_by("-created_at"),
+    })
+@login_required
 def order_success(request, order_id):
     order = get_object_or_404(
         Order.objects.prefetch_related("items"),
@@ -356,20 +407,22 @@ def order_cancel(request, order_id):
             messages.error(request, "Orders can only be cancelled before they ship.")
             return redirect("shop:orders")
 
-        quantities = {}
-        for item in order.items.only("product_id", "quantity"):
-            if item.product_id:
-                quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
+        if order.stock_reserved:
+            quantities = {}
+            for item in order.items.only("product_id", "quantity"):
+                if item.product_id:
+                    quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
 
-        products = Product.objects.select_for_update().filter(
-            pk__in=quantities,
-        ).order_by("pk")
-        for product in products:
-            product.stock += quantities[product.pk]
-            product.save(update_fields=["stock"])
+            products = Product.objects.select_for_update().filter(
+                pk__in=quantities,
+            ).order_by("pk")
+            for product in products:
+                product.stock += quantities[product.pk]
+                product.save(update_fields=["stock"])
+            order.stock_reserved = False
 
         order.status = "cancelled"
-        order.save(update_fields=["status"])
+        order.save(update_fields=["status", "stock_reserved"])
 
     messages.success(request, f"Order #{order.pk} has been cancelled.")
     return redirect("shop:orders")

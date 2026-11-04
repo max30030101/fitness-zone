@@ -1,3 +1,4 @@
+﻿
 from django import forms
 
 from .models import Order, SavedAddress
@@ -9,12 +10,14 @@ class CheckoutForm(forms.ModelForm):
         required=False,
         label="Use a saved address",
     )
+
     address_label = forms.CharField(
         max_length=40,
         required=False,
         initial="Home",
         label="Address label",
     )
+
     save_address = forms.BooleanField(
         required=False,
         initial=True,
@@ -33,22 +36,47 @@ class CheckoutForm(forms.ModelForm):
             "pincode",
             "address_label",
             "save_address",
+            "payment_method",
         ]
-        labels = {"address_line": "Address", "pincode": "PIN code"}
+
+        labels = {
+            "address_line": "Address",
+            "pincode": "PIN code",
+            "payment_method": "Choose payment method",
+        }
+
+        widgets = {
+            "payment_method": forms.Select(
+                attrs={"class": "form-control"}
+            ),
+        }
 
     def __init__(self, *args, user, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
+
+        # Default payment method for older checkout requests
+        self.fields["payment_method"].required = False
+        self.fields["payment_method"].initial = "cod"
+
         addresses = SavedAddress.objects.filter(user=user)
         self.fields["saved_address"].queryset = addresses
+
         selected_address = None
 
         if self.is_bound:
-            address_id = self.data.get(self.add_prefix("saved_address"))
+            address_id = self.data.get(
+                self.add_prefix("saved_address")
+            )
+
             if address_id:
-                selected_address = addresses.filter(pk=address_id).first()
+                selected_address = addresses.filter(
+                    pk=address_id
+                ).first()
+
                 if selected_address:
                     data = self.data.copy()
+
                     for field_name in (
                         "full_name",
                         "phone",
@@ -58,14 +86,28 @@ class CheckoutForm(forms.ModelForm):
                         "pincode",
                     ):
                         key = self.add_prefix(field_name)
+
                         if not data.get(key):
-                            data[key] = getattr(selected_address, field_name)
+                            data[key] = getattr(
+                                selected_address,
+                                field_name,
+                            )
+
                     self.data = data
+
         else:
             selected_address = addresses.first()
+
             if selected_address:
-                self.initial.setdefault("saved_address", selected_address.pk)
-                self.initial["address_label"] = selected_address.label
+                self.initial.setdefault(
+                    "saved_address",
+                    selected_address.pk,
+                )
+
+                self.initial["address_label"] = (
+                    selected_address.label
+                )
+
                 for field_name in (
                     "full_name",
                     "phone",
@@ -74,17 +116,43 @@ class CheckoutForm(forms.ModelForm):
                     "state",
                     "pincode",
                 ):
-                    self.initial[field_name] = getattr(selected_address, field_name)
+                    self.initial[field_name] = getattr(
+                        selected_address,
+                        field_name,
+                    )
+
+    def clean_payment_method(self):
+        return (
+            self.cleaned_data.get("payment_method")
+            or "cod"
+        )
 
     def clean_saved_address(self):
         address = self.cleaned_data.get("saved_address")
+
         if address and address.user_id != self.user.pk:
-            raise forms.ValidationError("Choose one of your saved addresses.")
+            raise forms.ValidationError(
+                "Choose one of your saved addresses."
+            )
+
         return address
 
 
 class SavedAddressForm(forms.ModelForm):
     class Meta:
         model = SavedAddress
-        fields = ["label", "full_name", "phone", "address_line", "city", "state", "pincode"]
-        labels = {"address_line": "Address", "pincode": "PIN code"}
+
+        fields = [
+            "label",
+            "full_name",
+            "phone",
+            "address_line",
+            "city",
+            "state",
+            "pincode",
+        ]
+
+        labels = {
+            "address_line": "Address",
+            "pincode": "PIN code",
+        }

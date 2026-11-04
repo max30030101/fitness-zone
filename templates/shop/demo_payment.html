@@ -1,0 +1,259 @@
+
+{% extends "base.html" %}
+{% block title %}Demo Payment | FITNESS ZONE{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="wrap narrow">
+
+    <div class="fz-pay-header">
+      <p class="fz-eyebrow">FITNESS ZONE / SECURE CHECKOUT</p>
+      <h1>Complete Payment<span>.</span></h1>
+      <p class="muted">Order #{{ order.pk }} · {{ order.get_payment_method_display }}</p>
+    </div>
+
+    <div class="fz-demo-notice">
+      <strong>DEMO PAYMENT MODE</strong>
+      <p>No real money will be transferred. This is a simulated payment system created for demonstration purposes only.</p>
+    </div>
+
+    <div class="fz-pay-card">
+      <p class="fz-label">TOTAL AMOUNT</p>
+      <div class="fz-amount">₹{{ order.total|floatformat:"2g" }}</div>
+      <p class="muted">Order #{{ order.pk }}</p>
+
+      <div class="fz-divider"></div>
+
+      <h2>Payment Details</h2>
+      <div class="fz-detail-row">
+        <span>Payment method</span>
+        <strong>{{ order.get_payment_method_display }}</strong>
+      </div>
+      <div class="fz-detail-row">
+        <span>Order status</span>
+        <strong>{{ order.get_status_display }}</strong>
+      </div>
+      <div class="fz-detail-row">
+        <span>Payment status</span>
+        <strong>{{ order.get_payment_status_display|default:order.payment_status|title }}</strong>
+      </div>
+
+      <div class="fz-divider"></div>
+
+      <h2>Choose Demo Result</h2>
+      <p class="muted">Select the result you want to simulate for this payment attempt.</p>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="fz-result-options">
+          <label class="fz-result-option">
+            <input type="radio" name="payment_result" value="success" required>
+            <span class="fz-result-icon">✓</span>
+            <span class="fz-result-copy">
+              <strong>Successful Payment</strong>
+              <small>Simulate a successful payment and confirm the order.</small>
+            </span>
+          </label>
+
+          <label class="fz-result-option">
+            <input type="radio" name="payment_result" value="failed">
+            <span class="fz-result-icon">×</span>
+            <span class="fz-result-copy">
+              <strong>Failed Payment</strong>
+              <small>Simulate a failed payment. You can retry later.</small>
+            </span>
+          </label>
+
+          <label class="fz-result-option">
+            <input type="radio" name="payment_result" value="pending">
+            <span class="fz-result-icon">…</span>
+            <span class="fz-result-copy">
+              <strong>Pending Payment</strong>
+              <small>Simulate a payment that is still processing.</small>
+            </span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-large fz-pay-button">
+          Confirm Demo Payment
+        </button>
+      </form>
+
+      <p class="fz-security-note">DEMO ONLY · NO BANK CONNECTION · NO REAL TRANSACTION</p>
+    </div>
+
+    {% if payments %}
+    <div class="fz-history">
+      <h2>Payment Attempts</h2>
+      {% for payment in payments %}
+      <div class="fz-history-row">
+        <div>
+          <strong>{{ payment.get_status_display|title }}</strong>
+          <small>{{ payment.transaction_id }}</small>
+          <small>{{ payment.created_at|date:"d M Y, h:i A" }}</small>
+        </div>
+        <div class="fz-history-amount">
+          ₹{{ payment.amount|floatformat:"2g" }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="fz-back-link">
+      <a href="{% url 'shop:orders' %}">← Back to My Orders</a>
+    </div>
+
+  </div>
+</section>
+
+<style>
+.fz-pay-header { margin-bottom:25px; }
+.fz-eyebrow {
+  color:#b5f542;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:3px;
+}
+.fz-pay-header h1 {
+  font-size:clamp(30px,5vw,44px);
+  margin:10px 0;
+}
+.fz-pay-header h1 span { color:#b5f542; }
+.fz-demo-notice {
+  padding:17px;
+  margin-bottom:20px;
+  border:1px solid rgba(181,245,66,.35);
+  border-radius:13px;
+  background:rgba(181,245,66,.07);
+}
+.fz-demo-notice strong {
+  color:#b5f542;
+  font-size:13px;
+  letter-spacing:1.5px;
+}
+.fz-demo-notice p {
+  margin:7px 0 0;
+  font-size:13px;
+  color:#c4c4c4;
+}
+.fz-pay-card, .fz-history {
+  padding:clamp(18px,4vw,30px);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  background:rgba(255,255,255,.025);
+}
+.fz-label {
+  color:#aaa;
+  font-size:12px;
+  letter-spacing:2px;
+  font-weight:700;
+}
+.fz-amount {
+  color:#b5f542;
+  font-size:clamp(36px,7vw,52px);
+  font-weight:900;
+  margin:5px 0;
+}
+.fz-divider {
+  height:1px;
+  background:rgba(255,255,255,.12);
+  margin:23px 0;
+}
+.fz-pay-card h2, .fz-history h2 {
+  font-size:19px;
+  margin-bottom:16px;
+}
+.fz-detail-row {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+  font-size:14px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.fz-detail-row span { color:#aaa; }
+.fz-detail-row strong { text-align:right; }
+.fz-result-options {
+  display:grid;
+  gap:12px;
+  margin:18px 0 22px;
+}
+.fz-result-option {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:15px;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:12px;
+  cursor:pointer;
+  transition:.2s;
+}
+.fz-result-option:hover,
+.fz-result-option:has(input:checked) {
+  border-color:#b5f542;
+  background:rgba(181,245,66,.07);
+}
+.fz-result-option input {
+  accent-color:#b5f542;
+  width:17px;
+  height:17px;
+}
+.fz-result-icon {
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:rgba(181,245,66,.12);
+  color:#b5f542;
+  font-weight:900;
+}
+.fz-result-copy {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
+.fz-result-copy strong { font-size:14px; }
+.fz-result-copy small, .fz-history-row small {
+  color:#aaa;
+  font-size:12px;
+}
+.fz-pay-button { width:100%; }
+.fz-security-note {
+  color:#888;
+  font-size:10px;
+  letter-spacing:1.2px;
+  text-align:center;
+  margin:17px 0 0;
+}
+.fz-history { margin-top:20px; }
+.fz-history-row {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.fz-history-row:last-child { border-bottom:0; }
+.fz-history-row > div:first-child {
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:0;
+}
+.fz-history-row small { overflow-wrap:anywhere; }
+.fz-history-amount {
+  color:#b5f542;
+  font-weight:800;
+  white-space:nowrap;
+}
+.fz-back-link { margin-top:20px; }
+.fz-back-link a { color:#b5f542; text-decoration:none; }
+@media(max-width:480px) {
+  .fz-result-option { padding:12px; gap:9px; }
+  .fz-detail-row { font-size:13px; }
+}
+</style>
+{% endblock %}
